@@ -1,0 +1,144 @@
+@import "./../components/defect.wxss";
+@import "./../components/orderlist.wxss";
+/* -- base color -- */
+/* -- base fontSize -- */
+/* -- base lineHeight -- */
+/* -- Mixin -- */
+.container {
+  min-height: calc(100vh);
+  display: block;
+}
+.package {
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  line-height: 90rpx;
+  font-size: 28rpx;
+  color: #333333;
+  height: 94rpx;
+  background: #ffffff;
+  margin-bottom: 20rpx;
+}
+.package view {
+  width: 190rpx;
+  margin: 0 30rpx;
+  box-sizing: border-box;
+  text-align: center;
+  float: left;
+}
+.package view.active {
+  border-bottom: 2px #ec3d3a solid;
+  color: #ec3d3a;
+}
+.lg-container {
+  background: #ffffff;
+  padding-bottom: 20rpx;
+}
+.lg-container .lgtitle {
+  padding: 20rpx;
+  border-bottom: 1px #eeeeee solid;
+  background: #ffffff;
+  margin-bottom: 20rpx;
+}
+.lg-container .lgtitle.latest {
+  position: relative;
+  margin-bottom: 0;
+  padding-bottom: 32rpx;
+  border-bottom: 0;
+  overflow: hidden;
+}
+.lg-container .lgtitle.latest image {
+  position: absolute;
+  width: 100%;
+  height: 8rpx;
+  left: 0;
+}
+.lg-container .lgtitle.latest image.top-line {
+  top: 0;
+}
+.lg-container .lgtitle.latest image.bottom-line {
+  bottom: 0;
+}
+.lg-container .lgtitle.latest .icon-me_dd {
+  font-size: 80rpx;
+  float: left;
+  color: #ec3d3a;
+  vertical-align: middle;
+}
+.lg-container .lgtitle.latest .latest-detail {
+  float: right;
+  width: 600rpx;
+}
+.lg-container .lgtitle.latest .tips {
+  display: block;
+}
+.lg-container .lgtitle .right {
+  text-align: right;
+  width: 40%;
+}
+.lg-container .lgtitle .left {
+  width: 60%;
+}
+.lg-container .lgtitle text {
+  display: inline-block;
+}
+.lgdetail {
+  position: relative;
+  padding: 0 20rpx;
+}
+.lgdetail view {
+  display: inline-block;
+}
+.lgdetail .lgcontent {
+  width: 100%;
+  padding: 20rpx 0;
+}
+.lgdetail .timeline {
+  position: absolute;
+  width: 1px;
+  top: 0;
+  left: 204rpx;
+  background: #eeeeee;
+  height: 100%;
+  z-index: 1;
+}
+.lgdetail .left {
+  width: 162rpx;
+  vertical-align: top;
+  padding-top: 4rpx;
+}
+.lgdetail .left text {
+  display: block;
+}
+.lgdetail .middle {
+  width: 71rpx;
+  position: relative;
+  z-index: 99;
+  vertical-align: top;
+  padding-top: 4rpx;
+}
+.lgdetail .middle .status {
+  width: 40rpx;
+  height: 40rpx;
+  border: 1px #eeeeee solid;
+  text-align: center;
+  line-height: 40rpx;
+  border-radius: 50%;
+  background: #ffffff;
+}
+.lgdetail .middle .status.active {
+  border: 1px #ec3d3a solid;
+  background: #ec3d3a;
+}
+.lgdetail .middle .status.active .iconfont {
+  color: #ffffff;
+  font-size: 30rpx;
+}
+.lgdetail .middle .status .iconfont {
+  font-size: 20rpx;
+  color: #cccccc;
+  vertical-align: middle;
+}
+.lgdetail .right {
+  width: 467rpx;
+}

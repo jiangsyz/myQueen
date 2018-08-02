@@ -1,0 +1,154 @@
+@import "variables.less";
+
+page{
+  background: @white;
+}
+.contact-phone{
+  position: absolute;
+  bottom: 0;
+  left:0;
+  height: 80rpx;
+  width:100%;
+  text-align: center;
+}
+.login-container {
+  height: calc(100vh);
+  background: @white;
+  width:100%;
+  overflow: hidden;
+  position: relative;
+}
+.app-info {
+  position: relative;
+  text-align: center;
+  padding-bottom:40rpx;
+  .app-logo {
+    display: block;
+    width: 100%;
+  }
+}
+.logo{
+  width:200rpx;
+  height: 200rpx;
+  display: block;
+  margin:0 auto;
+}
+.alert {
+  text-align: center;
+  position: relative;
+  height: 400rpx;
+  .alert-layer{
+    position: absolute;
+    width:100%;
+    height:400rpx;
+    padding:0 40rpx;
+    box-sizing: border-box;
+    left:0;
+    top:0;
+    transition: 0.5s left ease-out;
+    &.hidden{
+      left: -100%;
+    }
+    &.show{
+      left: 0;
+    }
+    &.unshow{
+      left:100%;
+    }
+  }
+}
+
+.alert .alert-title {
+  font-weight: 400;
+  font-size: @largeSize;
+  color: @dark;
+  margin-bottm:10rpx;
+}
+
+.alert-desc {
+  display: block;
+  list-style: disc inside none;
+  margin-top:20rpx;
+}
+
+.alert .alert-text {
+  display: list-item;
+  text-align: -webkit-match-parent;
+  font-size: @baseSize;
+  color: @darkgray;
+}
+
+.login-btn{
+  background:@lightred;
+  border-radius: 0;
+  color:@white;
+  line-height: 90rpx;
+  text-align: center;
+  margin-top:40rpx;
+  font-size:@largeSize;
+}
+.login-btn-active{
+  background:@lightredHover;
+}
+.logged {
+  margin-top: 200rpx;
+}
+
+.logged .logged-icon {
+  display: block;
+  width: 128rpx;
+  height: 128rpx;
+  margin: 40rpx auto;
+}
+
+.logged .logged-text {
+  font-size: @baseSize;
+  color: @dark;
+  text-align: center;
+  margin: 20rpx 0;
+}
+.app-name {
+  font-size: @titleSize;
+  color: @dark;
+  display: block;
+  padding:20rpx 0;
+  text-align: center;
+  .border-btm-gray(@lightgray);
+}
+.login-step{
+  width:160rpx;
+  margin:0 auto;
+  position: absolute;
+  bottom:50rpx;
+  left:50%;
+  transform:translateX(-50%);
+  -webkit-transform:translateX(-50%);
+  text{
+    display: inline-block;
+    text-align: center;
+    width: 60rpx;
+    height:8rpx;
+    margin:0 10rpx;
+    background: @lightred;
+    &.active{
+      background: @lightred;
+    }
+    &.unactive{
+      background: @gray;
+    }
+  }
+}
+.login-error{
+  text-align: center;
+  padding: 0 40rpx;
+  .font-normal{
+    display: block;
+  }
+  .tips{
+    font-size: @baseSize
+  }
+  .blank-button{
+    line-height:88rpx !important;
+    margin-top:20rpx;
+  }
+}

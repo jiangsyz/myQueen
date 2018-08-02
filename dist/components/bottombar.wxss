@@ -1,0 +1,103 @@
+/* -- base color -- */
+/* -- base fontSize -- */
+/* -- base lineHeight -- */
+/* -- Mixin -- */
+.bottombar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 116rpx;
+  background: #f8f8f8;
+  display: flex;
+  font-size: 28rpx;
+  color: #ffffff;
+  z-index: 9999999;
+}
+.bottombar .contact {
+  width: 15%;
+  float: left;
+  vertical-align: middle;
+  border-top: 1px #eeeeee solid;
+}
+.bottombar .contact button {
+  font-size: 28rpx;
+  color: #ffffff;
+  background: none;
+  padding: 0 10rpx;
+}
+.bottombar .contact text {
+  display: block;
+  color: #ffffff;
+}
+.bottombar .contact .iconfont {
+  color: #ec3d3a;
+  font-size: 72rpx;
+}
+.bottombar .contact .icon-new_kefu {
+  line-height: 110rpx;
+}
+.bottombar .contact .contact-active .iconfont {
+  color: #b82828;
+}
+.bottombar .goCart {
+  width: 15%;
+  float: left;
+  vertical-align: middle;
+  border-top: 1px #eeeeee solid;
+}
+.bottombar .goCart .goCart-icon {
+  position: relative;
+}
+.bottombar .goCart .goCart-icon .icon-new_gouwuche {
+  color: #333333;
+  font-size: 66rpx;
+  margin-top: 18rpx;
+  display: inline-block;
+}
+.bottombar .goCart .goCart-icon .goCart-txt {
+  font-size: 28rpx;
+  color: #333333;
+  display: block;
+}
+.bottombar .goCart .goCart-icon .cart-count {
+  position: absolute;
+  top: 14rpx;
+  right: 32rpx;
+  line-height: 38rpx;
+  background: #ec3d3a;
+  color: #ffffff;
+  text-align: center;
+  border-radius: 40rpx;
+  padding: 0 6px;
+  min-width: 10rpx;
+  font-size: 20rpx;
+}
+.bottombar .goCart .goCart-icon .icon-sljia {
+  font-size: 16rpx;
+  color: #ffffff;
+  vertical-align: middle;
+  margin-top: -4rpx;
+  float: right;
+}
+.bottombar .cart,
+.bottombar .buy,
+.bottombar .unAvailable {
+  width: 50%;
+  line-height: 116rpx;
+  font-size: 32rpx;
+  text-align: center;
+  background: #fc8d43;
+  display: inline-block;
+}
+.bottombar .buy {
+  background: #ec3d3a;
+}
+.bottombar .available {
+  width: 70%;
+  float: left;
+}
+.bottombar .unAvailable {
+  width: 70%;
+  background: #cccccc;
+}

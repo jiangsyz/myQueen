@@ -1,0 +1,306 @@
+<style lang="less" src="../less/index.less"></style>
+
+<template>
+  <view class="container" wx:if="{{isLoading}}">
+    <button class="custom" open-type="contact" session-from="udesk|{{nick_name}}|{{avatar}}|customer^{{customer_info_str}}|note^{{note_info_str}}"><image src="../image/custom.png"></image></button>
+    <searchbar :pagefrom.sync="pageTitle"></searchbar>
+    <swiper current="{{swiperOpt.currentTab}}" indicator-dots="{{swiperOpt.indicatorDots}}" indicator-color="{{swiperOpt.indicatorColor}}" indicator-active-color="{{swiperOpt.indicatorActive}}" autoplay="{{swiperOpt.autoplay}}" interval="{{swiperOpt.interval}}" duration="{{swiperOpt.duration}}" circular="{{swiperOpt.circular}}" @change.stop="changeBanner" class="index-swiper">
+      <repeat for="{{bannerLink}}" index="index" item="item" key="key">
+          <swiper-item>
+            <navigator url="./detail?id={{item.detailId}}"><image src="{{item.path}}" mode="aspectFill"></image></navigator>
+          </swiper-item>
+      </repeat>
+    </swiper>
+    <view class="index-promot" @tap="goApplyVip">
+      <!-- <image class="index-promot-img" src="http://p33mnuvro.bkt.clouddn.com/2018/5/prwrk2v6uq.png" mode="aspectFill"></image> -->
+      <view wx:if="{{showPromot}}">
+        <image class="index-promot-img" src="../image/dril_gray.png" mode="aspectFill" wx:if="{{userLevel === 0}}"></image>
+        <image class="index-promot-img" src="../image/dril_golden.png" mode="aspectFill" wx:if="{{userLevel === 1}}"></image>
+        <view class="index-promot-content">
+          <view class="index-promot-title">
+            <image src="../image/supermember.png"></image>
+          </view>
+          <view wx:if="{{userLevel === 0}}">
+            <view class="index-promot-txt"><text>预计全年可帮您节省￥{{vipReduction}}</text><text class="font-normal">立即成为会员</text></view>
+          </view>
+          <view wx:elif="{{userLevel === 1}}">
+            <view class="index-promot-txt"><text>会员将于{{vipEnd}}到期</text><text class="font-normal">会员续费</text></view>
+          </view>
+        </view>
+      </view>
+    </view>
+    <wxc-flex cross="{{cross}}" class="top_nav-container">
+      <repeat for="{{topnavigation}}" index="index" item="item">
+        <view class="top_nav {{currentPage == index? 'top_nav_active' : ''}}" @tap="navTab({{index}})"><image src="{{item.image}}"></image><text>{{item.title}}</text></view>
+      </repeat>
+    </wxc-flex>
+    <repeat for="{{topnavigation}}" index="index" item="item">
+      <view wx:if="{{currentPage === index}}" class="content">
+        <view class="goods-title"><image src="{{categoryImage[index]}}"></image></view>
+        <recGoods :goodsItem.sync="goods" @goodsTap.user="goDetail"></recGoods>
+      </view>
+    </repeat>
+    <!-- <view wx:if="{{currentPage === 0}}" class="content">
+        <view class="goods-title"><image src="../image/sptj_img.png"></image></view>
+        <recGoods :goodsItem.sync="goods" @goodsTap.user="goDetail"></recGoods>
+    </view>
+    <view wx:elif="{{currentPage === 1}}" class="content">
+        <view class="goods-title"><image src="../image/rmsp_img.png"></image></view>
+        <hotGoods :goodsItem.sync="goods" @goodsTap.user="goDetail"></hotGoods>
+    </view> -->
+    <defect wx:if="{{isNull}}" type="1"></defect>
+    <isDown wx:if="{{isDown}}"></isDown>
+  </view>  
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import Search from '../components/searchbar'
+  import Goods from '../components/goods'
+  import Loading from '../components/loading'
+  import Defect from '../components/defect'
+  import Reachdown from '../components/reachdown'
+
+  export default class Main extends wepy.page {
+    config = {
+      navigationBarTitleText: '正善牛肉',
+      enablePullDownRefresh: true,
+      usingComponents: {
+        'wxc-toast': '../../packages/@minui/wxc-toast/dist/index',
+        'wxc-flex': '../../packages/@minui/wxc-flex/dist/index'
+      }
+    }
+    components = {
+      recGoods: Goods,
+      hotGoods: Goods,
+      load: Loading,
+      searchbar: Search,
+      defect: Defect,
+      isDown: Reachdown
+    }
+    data = {
+      token: '',
+      pageTitle: 'index',
+      bannerLink: [],
+      topnavigation: [{
+        title: '推荐',
+        image: '../image/rmd_icon.png'
+      }, {
+        title: '热门',
+        image: '../image/hot_icon.png'
+      }],
+      currentPage: 0,
+      pageauto: false,
+      swiperOpt: {
+        autoplay: true,
+        interval: 3000,
+        duration: 1000,
+        currentTab: 0,
+        indicatorDots: true,
+        indicatorColor: '#cccccc',
+        indicatorActive: '#ec3d3a',
+        circular: true
+      },
+      goods: [],
+      loaded: false,
+      pageNum: 1,
+      totalPageNum: '',
+      isNull: true,
+      isDown: false,
+      isLoading: false,
+      userLevel: 0,
+      vipEnd: '',
+      vipReduction: '',
+      categoryImage: ['../image/sptj_img.png', '../image/rmsp_img.png'],
+      showPromot: true,
+      nick_name: '',
+      avatar: '',
+      customer_info_str: '',
+      note_info_str: ''
+    }
+
+    methods = {
+      navTab (index) {
+        this.currentPage = index
+        this.initPage()
+      },
+      changeTab (e) {
+        this.currentPage = e.detail.current
+      },
+      changeBanner (e) {
+        if (e.detail.source === 'touch') {
+          this.swiperOpt.currentTab = e.detail.current
+        }
+      },
+      goDetail (id) {
+        wepy.navigateTo({
+          url: './detail?id=' + id
+        })
+      },
+      goApplyVip () {
+        wepy.navigateTo({
+          url: './applyVip'
+        })
+      }
+    }
+    onShow () {
+      this.token = this.$parent.getToken()
+      this.$parent.getUserLevel(this.token, () => {
+        this.getUserLevel()
+        this.$apply()
+      })
+      this.nick_name = this.$parent.getUserName()
+      this.avatar = this.$parent.getUserAvatar()
+      this.customer_info_str = this.$parent.getMessage()
+      this.note_info_str = this.$parent.getBusiness('首页', null, null)
+      // this.currentPage = 0
+      // this.isLoading = false
+    }
+    getUserLevel () {
+      this.userLevel = this.$parent.globalData.userLevel
+      this.vipReduction = this.$parent.globalData.expectedReduction
+      this.vipEnd = this.$parent.dateFormat(this.$parent.globalData.vipEnd * 1000, 'Y年m月d日')
+      this.showPromot = true
+    }
+    onReachBottom () {
+      // 显示加载状态
+      if (this.pageNum < this.totalPageNum) {
+        // 显示下一页数据
+        this.pageNum ++
+        this.getInitData()
+      } else {
+        if (this.goods.length !== 0) {
+          this.isDown = true
+        }
+      }
+    }
+    getInitData (cb) {
+      this.token = this.$parent.getToken()
+      this.$parent.showLoading()
+      this.isDown = false
+      var parent = this.$parent
+      var _this = this
+      var data = {
+        pageNum: this.pageNum,
+        recommendType: this.currentPage + 1,
+        token: this.token,
+        pageSize: '5'
+      }
+      parent.HttpRequest.IndexHttp(data, () => {
+        _this.$parent.hideLoading()
+        // _this.$parent.showFail()
+        _this.isNull = true
+      }).then((res) => {
+        if (_this.pageNum === 1) {
+          _this.goods = []
+        }
+        console.log(res)
+        _this.$parent.hideLoading()
+        if (res.data.error === 0) {
+          _this.totalPageNum = res.data.data.totalPageNum
+          var data = res.data.data.spus
+          if (data.length === 0) {
+            _this.isNull = true
+          } else {
+            _this.isNull = false
+            if (res.data.data.totalCount <= this.pageSize) {
+              _this.isDown = true
+            } else {
+              _this.isDown = false
+            }
+          }
+          data.forEach((item, index) => {
+            var good = {}
+            good.path = item.cover
+            good.title = item.title
+            good.price = item.memberPrice
+            good.oldprice = item.price
+            good.reduction = item.reduction
+            good.id = item.sourceId
+            good.detail = item.viceTitle
+            good.descript = item.desc
+            _this.goods.push(good)
+          })
+          cb && cb()
+        } else {
+          wepy.hideLoading()
+          _this.isNull = true
+          if (_this.$parent.missToken) {
+            _this.initPage()
+          }
+        }
+        _this.$apply()
+      }).catch(() => {
+        _this.$parent.hideLoading()
+        // _this.$parent.showFail()
+        _this.isNull = true
+      })
+    }
+    initPage () {
+      this.pageNum = 1
+      this.isNull = false
+      this.getInitData(() => {
+        wepy.stopPullDownRefresh()
+      })
+    }
+    onPullDownRefresh () {
+      this.currentPage = 0
+      this.getBanner()
+      this.$parent.getUserLevel(this.token, () => {
+        this.getUserLevel()
+      })
+      this.initPage()
+    }
+    getBanner () {
+      this.token = this.$parent.getToken()
+      this.bannerLink = []
+      var _this = this
+      var data = {
+        token: this.token,
+        siteNo: 'index'
+      }
+      this.$parent.HttpRequest.GetBanner(data).then((res) => {
+        console.log(res)
+        if (res.data.error === 0) {
+          var data = res.data.data
+          data.forEach((item) => {
+            var obj = {}
+            obj.path = item.image
+            obj.id = item.id
+            obj.sortId = item.sort
+            obj.detailId = item.uri.split(',')[1]
+            _this.bannerLink.push(obj)
+            _this.bannerLink.sort((obj1, obj2) => {
+              var val1 = obj1.sortId
+              var val2 = obj2.sortId
+              if (val1 < val2) {
+                return -1
+              } else if (val1 > val2) {
+                return 1
+              } else {
+                return 0
+              }
+            })
+          })
+        } else {
+          if (_this.$parent.missToken) {
+            _this.getBanner()
+          }
+        }
+        _this.isLoading = true
+        _this.$apply()
+      })
+    }
+    onShareAppMessage (res) {
+      return {
+        title: '正善牛肉',
+        path: '/pages/login'
+      }
+    }
+    onLoad () {
+      this.initPage()
+      this.getBanner()
+      this.$apply()
+    }
+  }
+</script>

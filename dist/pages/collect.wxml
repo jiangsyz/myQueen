@@ -1,0 +1,63 @@
+
+  <view class="container">
+    <view  wx:if="{{!isNull}}">
+      <view class="collect" style="height:{{dataLength * 262}}rpx">
+        <view class="collect-list {{isEdit ? 'animate' : ''}}">
+          
+  <view class="goods-layer">
+    <block wx:for="{{$collectGood$goodsItem}}" wx:for-index="$collectGood$index" wx:for-item="$collectGood$item" wx:key="$collectGood$key">
+      <view class="goods {{$collectGood$item.noSales ? 'expire' : ''}}" bindtap="$collectGood$tap" id="{{$collectGood$item.id}}" data-wpytap-a="{{$collectGood$item.id}}" data-wpytap-b="{{$collectGood$item.noSales}}">
+        <view class="goods-image"><view class="expire-layer"  wx:if="{{$collectGood$item.noSales}}">商品失效</view><image src="{{$collectGood$item.path}}" mode="aspectFit" lazy-load="true"/></view>
+        <view class="goods-detail">
+          <view class="goods-detail-title">{{$collectGood$item.title}}</view>
+          <view class="goods-detail-price">
+            <text class="iconfont icon-new_vchao"/><text>￥{{$collectGood$item.price}}</text><text class="price"> (优惠￥{{$collectGood$item.reduction}})</text>
+          </view>
+          <view class="overflow">
+          <view class="goods-detail-oldprice">原价:{{$collectGood$item.oldprice}}</view>
+          <view class="goods-detail-vicetitle">规格:{{$collectGood$item.detail}}</view>
+          </view>
+          <view class="goods-promot">
+            <view class="goods-info">
+              {{$collectGood$item.descript}}
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+        </view>
+        <block wx:for="{{collectList}}" wx:for-index="index" wx:for-item="item" wx:key="key">
+          <view class="cover {{isEdit ? 'animate' : ''}}" style="top: {{index * 262}}rpx"/>
+          <view class="collect-check {{isEdit ? 'show' : ''}}" style="top: {{index * 262}}rpx">
+            <view catchtap="checked" data-wpychecked-a="{{index}}">
+              <text class="font-normal">删除</text>
+            </view>
+          </view>
+        </block>
+      </view>
+      
+  <view wx:if="{{isDown}}">
+    <view class="isDown">
+      <text>————————— 已加载完毕 —————————</text>
+    </view>
+  </view>
+
+      <view class="collect-bottom">
+        <button class="default-button" hover-class="default-button-hover" bindtap="editAll">{{isEdit ? '取消': '编辑'}}</button>
+      </view>
+    </view>
+    <view  wx:elif="{{isNull && !isLoading}}" class="blank">
+      
+  <view>
+    <view class="lost-goods">
+      <image src="../image/lost-goods.png"/>
+      <text class="iconfont {{$defect$typeIcon}}"/>
+      <text class="font-normal">{{$defect$typeTxt}}</text>
+    </view>
+  </view>
+
+      <view class="blank-button" hover-class="blank-button-hover" bindtap="goCategory">逛一逛</view>
+    </view>
+  </view>

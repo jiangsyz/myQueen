@@ -1,0 +1,86 @@
+
+  <view class="container">
+    <view class="user-logo">
+      <image class="userinfo-avatar" src="{{userInfo.avatarUrl}}" background-size="cover"/>
+      <view class="userinfo-nickname">
+        <text>{{userInfo.nickName}}</text>
+      </view>
+      <text class="font-normal telephone">{{userPhone}}</text>
+      <!-- <button open-type="getUserInfo" bindgetuserinfo="bindGetUserInfo" class="blank-button" wx:if="{{isLogin}}">绑定微信账号</button> -->
+    </view>
+    <view class="user-level">
+      <!-- <text class="iconfont icon-vip {{!isVip ? '' : 'vip'}}"></text> -->
+      <image src="../image/dril_gray2.png"  wx:if="{{!isVip}}"/>
+      <image src="../image/dril_golden2.png"  wx:else/>
+      <view wx:if="{{!isVip}}">
+        <text class="title">成为 <text class="link">超级会员</text> 获取超值优惠</text>
+        <button class="default-button" bindtap="goApplyVip">会员申请</button>
+      </view>
+      <view wx:else>
+        <text class="title">您的 <text class="link">超级会员</text> 将于 {{validation}} 到期</text>
+      </view>
+    </view>
+    <view class="setting-container">
+      <view class="setting-layer" wx:if="{{isVip}}" bindtap="goService">
+        <text class="iconfont icon-new_myfw"/>
+        <text>会员中心</text>
+        <!--
+        <text class="iconfont icon-rightsj"></text>
+        <text class="notice">2</text>
+        -->
+      </view>
+      <view class="setting-layer" bindtap="goOrder">
+        <text class="iconfont icon-new_mydd"/>
+        <text>我的订单</text>
+        <text class="iconfont icon-rightsj"/>
+      </view>
+      <view class="setting-layer order-layer">
+        <view class="order-list" bindtap="goUnpaid">
+          <text>{{unpaid}}</text>
+          <text>待付款</text>
+        </view>
+        <view class="order-list" bindtap="goUndelivered">
+          <text>{{undelivered}}</text>
+          <text>待发货</text>
+        </view>
+        <view class="order-list" bindtap="goUnreceipted">
+          <text>{{unreceipted}}</text>
+          <text>待收货</text>
+        </view>
+        <view class="order-list" bindtap="goRefunding">
+          <text>{{refunding}}</text>
+          <text>售后</text>
+        </view>
+      </view>
+    </view>
+    <view class="setting-container">
+      <view class="setting-layer" bindtap="goCustom">
+        <text class="iconfont icon-new_mykf"/>
+        <text>联系客服</text>
+        <text class="iconfont icon-rightsj"/>
+      </view>
+      <view class="setting-layer" bindtap="goCollect">
+        <text class="iconfont icon-new_mysc"/>
+        <text>我的收藏</text>
+        <text class="iconfont icon-rightsj"/>
+      </view>
+      <view class="setting-layer" bindtap="goAddress">
+        <text class="iconfont icon-new_mydz"/>
+        <text>收货地址</text>
+        <text class="iconfont icon-rightsj"/>
+      </view>
+      <view class="setting-layer" bindtap="goSystem">
+        <text class="iconfont icon-new_myxx"/>
+        <text>消息通知</text>
+        <text class="iconfont icon-rightsj"/>
+      </view>
+      <!--
+      <view class="setting-layer">
+        <text class="iconfont icon-kf_bq"></text>
+        <text>关于我们</text>
+        <text class="iconfont icon-rightsj"></text>
+      </view>
+      -->
+      <button class="default-button" hover-class="default-button-hover" bindtap="clear">退出登录</button>
+    </view>
+  </view>

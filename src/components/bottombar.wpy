@@ -1,0 +1,69 @@
+<style lang="less" src="../less/bottombar.less"></style>
+
+<template>
+  <view class="bottombar">
+    <view class="contact">
+      <button open-type="contact" session-from="udesk|{{nick_name}}|{{avatar}}|customer^{{customer_info_str}}|note^{{note_info_str}}" hover-class="contact-active">
+        <text class="iconfont icon-new_kefu"></text>
+      </button>
+    </view>
+    <view class="goCart" @tap="goCart">
+      <view class="goCart-icon user">
+        <text class="iconfont icon-new_gouwuche"></text>
+        <text class="cart-count" wx:if="{{cartVal > 0}}">{{cartMaxVal}}<text class="iconfont icon-sljia" wx:if="{{cartVal >= 99}}"></text></text>
+      </view>
+    </view>
+    <view wx:if="{{isAllowSale}}" class="available">
+      <view class="cart" @tap="addCart">
+        <text>加入购物车</text>
+      </view>
+      <view class="buy" @tap="buyTap">
+        <text>立即购买</text>
+      </view>
+    </view>
+    <view wx:else class="unAvailable"><text>该商品已下架</text></view>
+  </view>
+</template>
+<script>
+  import wepy from 'wepy'
+
+  export default class Bottombar extends wepy.component {
+    props = {
+      cartVal: Number,
+      messagePath: String,
+      nick_name: String,
+      avatar: String,
+      customer_info_str: String,
+      note_info_str: String,
+      isAllowSale: {
+        type: Boolean,
+        default: true
+      }
+    }
+    computed = {
+      cartMaxVal () {
+        if (this.cartVal >= 99) {
+          return 99
+        } else {
+          return this.cartVal
+        }
+      }
+    }
+    methods = {
+      addCart () {
+        this.$emit('cart', 'addCart')
+      },
+      buyTap () {
+        this.$emit('buy', 'addBuy')
+      },
+      goCart () {
+        wepy.switchTab({
+          url: './cart'
+        })
+      }
+    }
+    onLoad () {
+      this.$apply()
+    }
+  }
+</script>

@@ -1,0 +1,130 @@
+@import "./../components/reachdown.wxss";
+@import "./../components/defect.wxss";
+@import "./../components/searchbar.wxss";
+@import "./../components/loading.wxss";
+@import "./../components/goods.wxss";
+/* -- base color -- */
+/* -- base fontSize -- */
+/* -- base lineHeight -- */
+/* -- Mixin -- */
+.more {
+  height: 0;
+  background: #cccccc;
+  transition: 1s height ease-in;
+  overflow: hidden;
+}
+.more.show {
+  height: 100rpx;
+}
+.container {
+  margin-top: 80rpx;
+}
+swiper,
+image {
+  width: 100%;
+}
+.index-swiper {
+  height: 347rpx;
+  margin-bottom: 20rpx;
+}
+.index-swiper image {
+  height: 347rpx;
+}
+.top_nav-container {
+  width: 100%;
+  background: #ffffff;
+  border-bottom: 1px #eeeeee solid;
+}
+.top_nav-container .top_nav {
+  width: 20%;
+  line-height: 90rpx;
+  text-align: center;
+  margin: 0 15%;
+  font-size: 28rpx;
+  display: inline-block;
+}
+.top_nav-container .top_nav image {
+  width: 36rpx;
+  height: 36rpx;
+  vertical-align: middle;
+  margin-right: 16rpx;
+}
+.top_nav-container .top_nav text {
+  vertical-align: middle;
+}
+.top_nav-container .top_nav_active {
+  border-bottom: 2px #ec3d3a solid;
+  color: #ec3d3a;
+}
+.index-promot {
+  position: relative;
+  width: 100%;
+  height: 200rpx;
+  background: #0f1319;
+  margin-bottom: 20rpx;
+}
+.index-promot .index-promot-img {
+  width: 114rpx;
+  height: 86rpx;
+  position: absolute;
+  top: 50%;
+  left: 40rpx;
+  transform: translateY(-50%);
+  -webkit-transform: translateY(-50%);
+}
+.index-promot .index-promot-content {
+  position: absolute;
+  left: 24%;
+  top: 50%;
+  width: 550rpx;
+  transform: translateY(-50%);
+  -webkit-transform: translateY(-50%);
+  color: #ffffff;
+}
+.index-promot .index-promot-content .index-promot-title {
+  margin-bottom: 10rpx;
+}
+.index-promot .index-promot-content .index-promot-title image {
+  width: 160rpx;
+  height: 38rpx;
+}
+.index-promot .index-promot-content .index-promot-txt {
+  font-size: 28rpx;
+  line-height: 36rpx;
+}
+.index-promot .index-promot-content .index-promot-txt text {
+  float: left;
+  padding: 4rpx 0;
+}
+.index-promot .index-promot-content .index-promot-txt .font-normal {
+  color: #eac259;
+  border: 1px solid #eac259;
+  float: right;
+  font-size: 24rpx;
+  padding: 0 10rpx;
+}
+.goods-title {
+  text-align: center;
+  height: 25px;
+  margin-top: 20rpx;
+}
+.goods-title image {
+  width: 140px;
+  height: 25px;
+}
+.custom {
+  position: fixed;
+  right: 20rpx;
+  bottom: 100rpx;
+  border-radius: 50%;
+  z-index: 99999;
+  margin: 0;
+  padding: 0;
+  width: 96rpx;
+  height: 96rpx;
+  background: transparent;
+}
+.custom image {
+  width: 96rpx;
+  height: 96rpx;
+}

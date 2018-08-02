@@ -1,0 +1,294 @@
+<style lang="less" src="../less/user.less"></style>
+
+<template>
+  <view class="container">
+    <view class="user-logo">
+      <image class="userinfo-avatar" src="{{userInfo.avatarUrl}}" background-size="cover"/>
+      <view class="userinfo-nickname">
+        <text>{{userInfo.nickName}}</text>
+      </view>
+      <text class="font-normal telephone">{{userPhone}}</text>
+      <!-- <button open-type="getUserInfo" @getuserinfo="bindGetUserInfo" class="blank-button" wx:if="{{isLogin}}">绑定微信账号</button> -->
+    </view>
+    <view class="user-level">
+      <!-- <text class="iconfont icon-vip {{!isVip ? '' : 'vip'}}"></text> -->
+      <image src="../image/dril_gray2.png" wx:if="{{!isVip}}"></image>
+      <image src="../image/dril_golden2.png" wx:else></image>
+      <view wx:if="{{!isVip}}">
+        <text class="title">成为 <text class="link">超级会员</text> 获取超值优惠</text>
+        <button class="default-button" @tap="goApplyVip">会员申请</button>
+      </view>
+      <view wx:else>
+        <text class="title">您的 <text class="link">超级会员</text> 将于 {{validation}} 到期</text>
+      </view>
+    </view>
+    <view class="setting-container">
+      <view class="setting-layer" wx:if="{{isVip}}" @tap="goService">
+        <text class="iconfont icon-new_myfw"></text>
+        <text>会员中心</text>
+        <!--
+        <text class="iconfont icon-rightsj"></text>
+        <text class="notice">2</text>
+        -->
+      </view>
+      <view class="setting-layer" @tap="goOrder">
+        <text class="iconfont icon-new_mydd"></text>
+        <text>我的订单</text>
+        <text class="iconfont icon-rightsj"></text>
+      </view>
+      <view class="setting-layer order-layer">
+        <view class="order-list" @tap="goUnpaid">
+          <text>{{unpaid}}</text>
+          <text>待付款</text>
+        </view>
+        <view class="order-list" @tap="goUndelivered">
+          <text>{{undelivered}}</text>
+          <text>待发货</text>
+        </view>
+        <view class="order-list" @tap="goUnreceipted">
+          <text>{{unreceipted}}</text>
+          <text>待收货</text>
+        </view>
+        <view class="order-list" @tap="goRefunding">
+          <text>{{refunding}}</text>
+          <text>售后</text>
+        </view>
+      </view>
+    </view>
+    <view class="setting-container">
+      <view class="setting-layer" @tap="goCustom">
+        <text class="iconfont icon-new_mykf"></text>
+        <text>联系客服</text>
+        <text class="iconfont icon-rightsj"></text>
+      </view>
+      <view class="setting-layer" @tap="goCollect">
+        <text class="iconfont icon-new_mysc"></text>
+        <text>我的收藏</text>
+        <text class="iconfont icon-rightsj"></text>
+      </view>
+      <view class="setting-layer" @tap="goAddress">
+        <text class="iconfont icon-new_mydz"></text>
+        <text>收货地址</text>
+        <text class="iconfont icon-rightsj"></text>
+      </view>
+      <view class="setting-layer" @tap="goSystem">
+        <text class="iconfont icon-new_myxx"></text>
+        <text>消息通知</text>
+        <text class="iconfont icon-rightsj"></text>
+      </view>
+      <!--
+      <view class="setting-layer">
+        <text class="iconfont icon-kf_bq"></text>
+        <text>关于我们</text>
+        <text class="iconfont icon-rightsj"></text>
+      </view>
+      -->
+      <button class="default-button" hover-class="default-button-hover" @tap="clear">退出登录</button>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+
+  export default class User extends wepy.page {
+    config = {
+      navigationBarTitleText: '个人中心'
+    }
+    data = {
+      token: '',
+      userInfo: '',
+      isVip: false,
+      validation: '',
+      refunding: '',
+      undelivered: '',
+      unpaid: '',
+      unreceipted: '',
+      isLogin: false,
+      jscode: '',
+      userPhone: ''
+    }
+    methods = {
+      goService () {
+        wepy.navigateTo({
+          url: './applyVip'
+        })
+      },
+      goAddress () {
+        wepy.navigateTo({
+          url: './address'
+        })
+      },
+      goCollect () {
+        wepy.navigateTo({
+          url: './collect'
+        })
+      },
+      goOrder () {
+        wepy.navigateTo({
+          url: './order'
+        })
+      },
+      goSystem () {
+        wepy.navigateTo({
+          url: './system'
+        })
+      },
+      goUnpaid () {
+        wepy.navigateTo({
+          url: './order?orderType=unpaid'
+        })
+      },
+      goUndelivered () {
+        wepy.navigateTo({
+          url: './order?orderType=undelivered'
+        })
+      },
+      goUnreceipted () {
+        wepy.navigateTo({
+          url: './order?orderType=unreceipted'
+        })
+      },
+      goRefunding () {
+        wepy.navigateTo({
+          url: './order?orderType=refunding'
+        })
+      },
+      goApplyVip () {
+        wepy.navigateTo({
+          url: './applyVip'
+        })
+      },
+      goCustom () {
+        wepy.navigateTo({
+          url: './custom'
+        })
+      },
+      bindGetUserInfo (e) {
+        console.log(e.detail)
+        if (e.detail.userInfo) {
+          this.isLogin = false
+          this.$parent.globalData.userInfo = e.detail.userInfo
+          this.userInfo = e.detail.userInfo
+          var data = {
+            jscode: this.jscode,
+            encryptedData: e.detail.encryptedData,
+            iv: e.detail.iv
+          }
+          this.$parent.HttpRequest.SendUserInfo(data).then((res) => {
+            console.log(res)
+          })
+        } else {
+          this.isLogin = true
+          wepy.showModal({
+            title: '提示',
+            content: '拒绝授权将无法获取用户信息'
+          })
+        }
+      },
+      clear () {
+        wepy.getStorageInfo({
+          success: (res) => {
+            wepy.showModal({
+              title: '提示',
+              content: '是否退出当前账号',
+              success: (res) => {
+                if (res.confirm) {
+                  wepy.clearStorage()
+                  wepy.switchTab({
+                    url: './index'
+                  })
+                }
+              }
+            })
+          }
+        })
+      }
+    }
+    initUserData () {
+      this.token = this.$parent.getToken()
+      var _this = this
+      var data = {
+        token: this.token
+      }
+      this.$parent.HttpRequest.GetUserInfo(data).then((res) => {
+        console.log(res)
+        if (res.data.error === 0) {
+          var data = res.data.data
+          if (data.level === 0) {
+            _this.isVip = false
+          } else if (data.level === 1) {
+            _this.isVip = true
+          }
+          this.validation = this.$parent.dateFormat(data.vipEnd * 1000, 'Y年m月d日')
+        } else {
+          if (_this.$parent.missToken) {
+            _this.initUserData()
+          }
+        }
+        _this.$apply()
+      }).catch(() => {
+        // _this.$parent.showFail()
+      })
+    }
+    initUserOrder () {
+      this.token = this.$parent.getToken()
+      this.$parent.showLoading()
+      var _this = this
+      var data = {
+        token: this.token
+      }
+      this.$parent.HttpRequest.GetUserOrder(data).then((res) => {
+        console.log(res)
+        _this.$parent.hideLoading()
+        if (res.data.error === 0) {
+          var data = res.data.data
+          _this.refunding = data.refunding
+          _this.undelivered = data.undelivered
+          _this.unpaid = data.unpaid
+          _this.unreceipted = data.unreceipted
+        } else {
+          if (_this.$parent.missToken) {
+            _this.initUserOrder()
+          }
+        }
+        _this.$apply()
+      }).catch(() => {
+        _this.$parent.hideLoading()
+        // _this.$parent.showFail()
+      })
+    }
+    onLoad () {
+      this.$parent.getLogin((code) => {
+        this.jscode = code
+      })
+      this.userPhone = wepy.getStorageSync('phone')
+      var _this = this
+      wepy.getSetting({
+        success: (res) => {
+          if (res.authSetting['scope.userInfo']) {
+            _this.isLogin = false
+            // 已经授权，获取新的token
+            _this.$parent.getUser(() => {
+              _this.userInfo = this.$parent.globalData.userInfo
+            })
+          } else {
+            _this.isLogin = true
+          }
+          _this.$apply()
+        }
+      })
+      this.$apply()
+    }
+    onShow () {
+      // if (this.$parent.globalData.userLevel === 0) {
+      //   this.isVip = false
+      // } else if (this.$parent.globalData.userLevel === 1) {
+      //   this.isVip = true
+      // }
+      this.initUserData()
+      this.initUserOrder()
+      this.$apply()
+    }
+  }
+</script>

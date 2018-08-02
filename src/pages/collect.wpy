@@ -1,0 +1,198 @@
+<style lang="less" src="../less/collect.less"></style>
+<template>
+  <view class="container">
+    <view wx:if="{{!isNull}}">
+      <view class="collect" style="height:{{dataLength * 262}}rpx">
+        <view class="collect-list {{isEdit ? 'animate' : ''}}">
+          <collectGood :goodsItem.sync="collectList" @goodsTap.user="goDetail"></collectGood>
+        </view>
+        <repeat for="{{collectList}}" item="item" index="index">
+          <view class="cover {{isEdit ? 'animate' : ''}}" style="top: {{index * 262}}rpx"></view>
+          <view class="collect-check {{isEdit ? 'show' : ''}}" style="top: {{index * 262}}rpx">
+            <view @tap.stop="checked({{index}})">
+              <text class="font-normal">删除</text>
+            </view>
+          </view>
+        </repeat>
+      </view>
+      <isDown wx:if="{{isDown}}"></isDown>
+      <view class="collect-bottom">
+        <button class="default-button" hover-class="default-button-hover" @tap="editAll">{{isEdit ? '取消': '编辑'}}</button>
+      </view>
+    </view>
+    <view wx:elif="{{isNull && !isLoading}}" class="blank">
+      <defect type="4"></defect>
+      <view class="blank-button" hover-class="blank-button-hover" @tap="goCategory">逛一逛</view>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import Goods from '../components/goods'
+  import Defect from '../components/defect'
+  import Reachdown from '../components/reachdown'
+
+  export default class Collect extends wepy.page {
+    config = {
+      navigationBarTitleText: '我的收藏'
+    }
+    components = {
+      collectGood: Goods,
+      isDown: Reachdown,
+      defect: Defect
+    }
+    computed = {
+      isNull () {
+        if (this.collectList.length === 0) {
+          return true
+        } else {
+          return false
+        }
+      }
+    }
+    data = {
+      token: '',
+      pageSize: 5,
+      pageNum: 1,
+      totalPageNum: '',
+      collectList: [],
+      isEdit: false,
+      checkResult: '',
+      isDown: false,
+      dataLength: 0,
+      isLoading: true
+    }
+    methods = {
+      editAll () {
+        this.isEdit = !this.isEdit
+      },
+      goCategory () {
+        wepy.switchTab({
+          url: './category'
+        })
+      },
+      checked (index) {
+        this.checkResult = this.collectList[index].markId
+        wepy.showModal({
+          title: '提示',
+          content: '确认取消收藏',
+          success: (res) => {
+            if (res.confirm) {
+              this.CancelMark(this.checkResult, () => {
+                this.initPageData()
+              })
+            }
+          }
+        })
+      },
+      goDetail (id, type) {
+        console.log(type)
+        if (!type) {
+          wepy.navigateTo({
+            url: './detail?id=' + id
+          })
+        }
+      }
+    }
+    initCollect () {
+      this.token = this.$parent.getToken()
+      this.$parent.showLoading()
+      var _this = this
+      this.isEdit = false
+      this.isDown = false
+      this.isLoading = true
+      var data = {
+        token: this.token,
+        markType: 1,
+        pageSize: this.pageSize,
+        pageNum: this.pageNum
+      }
+      this.$parent.HttpRequest.GetMarkSpu(data).then((res) => {
+        console.log(res)
+        _this.isLoading = false
+        _this.$parent.hideLoading()
+        if (res.data.error === 0) {
+          var data = res.data.data
+          _this.totalPageNum = data.totalPageNum
+          _this.dataLength += data.spus.length
+          if (data.totalCount <= _this.pageSize) {
+            _this.isDown = true
+          } else {
+            _this.isDown = false
+          }
+          data.spus.forEach((item) => {
+            var good = {}
+            good.path = item.cover
+            good.title = item.title
+            good.price = item.memberPrice
+            good.oldprice = item.price
+            good.detail = item.viceTitle
+            good.reduction = item.reduction
+            good.id = item.sourceId
+            good.descript = item.desc
+            good.markId = item.markId
+            if (!item.isAllowSale) {
+              good.noSales = true
+            } else {
+              good.noSales = false
+            }
+            _this.collectList.push(good)
+          })
+        } else {
+          if (_this.$parent.missToken) {
+            _this.initCollect()
+          }
+        }
+        _this.$apply()
+      }).catch(() => {
+        _this.$parent.hideLoading()
+        _this.isLoading = false
+        // _this.$parent.showFail()
+      })
+    }
+    initPageData () {
+      this.pageNum = 1
+      this.dataLength = 0
+      this.collectList = []
+      this.initCollect()
+    }
+    CancelMark (markId, cb) {
+      this.token = this.$parent.getToken()
+      var _this = this
+      var data = {
+        markId: markId,
+        token: this.token
+      }
+      this.$parent.HttpRequest.CancelMarkHttp(data).then((res) => {
+        if (res.data.error === 0) {
+          cb && cb()
+        } else {
+          if (_this.$parent.missToken) {
+            // _this.token = this.$parent.getToken(res.data.error)
+          }
+        }
+        _this.$apply()
+      })
+    }
+    onReachBottom () {
+      // 显示加载状态
+      if (this.pageNum < this.totalPageNum) {
+        // 显示下一页数据
+        this.pageNum ++
+        this.initCollect()
+      } else {
+        if (this.collectList.length !== 0) {
+          this.isDown = true
+        }
+      }
+    }
+    onLoad () {
+      this.$apply()
+    }
+    onShow () {
+      this.getTokenTime = 0
+      this.initPageData()
+    }
+  }
+</script>

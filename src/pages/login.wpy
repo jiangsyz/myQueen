@@ -1,0 +1,217 @@
+<style lang="less" src="../less/login.less"></style>
+
+<template>
+  <view class="login-container">
+    <view class="login">
+      <view class="app-info">
+        <image class="app-logo" src="http://p33mnuvro.bkt.clouddn.com/uploads/0705/153077871164247816.png" mode="widthFix"></image>
+        <!-- <text class="app-name">正善小程序</text> -->
+        <image class="logo" src="../image/logo.png"></image>
+      </view>
+      <view wx:if="{{!isError}}">
+        <view class="alert" wx:if="{{!isNull}}">
+          <view class="alert-layer {{hasPhone ? 'hidden' : ''}}">
+            <view class="alert-title">网页由正善小程序开发</view>
+            <view class="alert-title">请确认授权以下信息</view>
+            <view class="alert-desc">
+              <view class="alert-text">获得你的手机号作为登录帐号</view>
+            </view>
+            <button class="login-btn" open-type="getPhoneNumber" hover-class="login-btn-active" @getphonenumber="login">确认登录</button>
+          </view>
+          <view class="alert-layer {{hasPhone ? 'show' : 'unshow'}}">
+            <view class="alert-title">网页由正善小程序开发</view>
+            <view class="alert-title">请确认授权以下信息</view>
+            <view class="alert-desc">
+              <view class="alert-text">获得你的公开信息（昵称、头像等）</view>
+            </view>
+            <button open-type="getUserInfo" @getuserinfo="bindGetUserInfo" class="login-btn" hover-class="login-btn-active" >绑定微信账号</button>
+          </view>
+          <view class="login-step">
+            <text class="{{hasPhone ? 'unactive' : 'active'}}"></text>
+            <text class="{{hasPhone ? 'active' : 'unactive'}}"></text>
+          </view> 
+        </view>
+        <view class="loading" wx:else>
+          <loading></loading>
+        </view>
+      </view>
+      <view class="login-error" wx:else>
+        <text class="font-normal">服务器出错，请联系客服</text>
+        <view wx:if="{{httpId !== ''}}">
+          <text class="tips">请复制错误信息码：</text><text class="tips" selectable="true">{{httpId}}</text><text selectable="false"></text>
+        </view>
+        <button class="blank-button" open-type="contact" session-from="udesk|{{nick_name}}|{{avatar}}|customer^{{customer_info_str}}|note^{{note_info_str}}">在线客服</button>
+        <button class="login-btn" hover-class="login-btn-active" @tap="loginAgain">重新登陆</button>
+      </view>
+      <view class="contact-phone" @tap="callPhone"><text class="title">客服热线：021 - 65870021</text></view>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import Loading from '../components/loading'
+
+  export default class Login extends wepy.page {
+    config = {
+      navigationBarTitleText: '用户登录'
+    }
+    data = {
+      isNull: true,
+      jscode: null,
+      refrenceCode: '',
+      overflow: false,
+      hasPhone: false,
+      isError: false,
+      httpId: '',
+      nick_name: '',
+      avatar: '',
+      customer_info_str: '',
+      note_info_str: ''
+    }
+    components = {
+      loading: Loading
+    }
+    methods = {
+      login (e) {
+        if (e.detail.encryptedData) {
+          this.$parent.getUserInfo(e, this.jscode, this.refrenceCode, () => {
+            // wepy.navigateTo({
+            //   url: './getUserInfo'
+            // })
+            this.hasPhone = true
+            this.$apply()
+          }, () => {
+            this.showError()
+            this.$apply()
+          })
+        } else {
+          wepy.showModal({
+            title: '提示',
+            content: '拒绝授权将无法正常使用小程序全部功能，请重新开启授权'
+          })
+        }
+      },
+      loginAgain () {
+        wepy.clearStorageSync()
+        this.$parent.getLogin((code) => {
+          this.jscode = code
+        })
+        this.isNull = false
+        this.isError = false
+        this.hasPhone = false
+      },
+      callPhone () {
+        wepy.makePhoneCall({
+          phoneNumber: '021-65870021'
+        })
+      },
+      bindGetUserInfo (e) {
+        this.$parent.getLogin((code) => {
+          this.jscode = code
+          wepy.getSetting({
+            success: (res) => {
+              if (res.authSetting['scope.userInfo']) {
+                this.$parent.globalData.userInfo = e.detail.userInfo
+                var data = {
+                  jscode: this.jscode,
+                  encryptedData: e.detail.encryptedData,
+                  iv: e.detail.iv
+                }
+                this.$parent.HttpRequest.SendUserInfo(data).then((res) => {
+                  this.$parent.showLoading()
+                  console.log(res)
+                  if (res.data.error !== undefined && res.data.error === 0) {
+                    var data = {
+                      phone: wepy.getStorageSync('phone')
+                    }
+                    this.$parent.requestToken(data, () => {
+                      this.$parent.hideLoading()
+                      var pages = this.getCurrentPages()
+                      var prevPage = pages[pages.length - 2]
+                      if (prevPage) {
+                        wepy.navigateBack()
+                      } else {
+                        this.goIndex()
+                      }
+                    }, () => {
+                      this.$parent.hideLoading()
+                      this.showError()
+                      this.$apply()
+                    })
+                  } else {
+                    this.$parent.hideLoading()
+                    this.showError()
+                    this.$apply()
+                  }
+                })
+              } else {
+                wepy.showModal({
+                  title: '提示',
+                  content: '拒绝授权将无法正常使用小程序全部功能，请重新开启授权'
+                })
+              }
+            }
+          })
+        })
+      }
+    }
+    goIndex () {
+      wepy.switchTab({
+        url: './index'
+      })
+    }
+    showError () {
+      this.isError = true
+      this.httpId = this.$parent.errorHttpId
+      this.note_info_str = this.$parent.getBusiness('用户登录错误码：' + this.$parent.errorHttpId, null, null)
+    }
+    onLoad (param) {
+      if (param.refrenceCode) {
+        this.refrenceCode = param.refrenceCode
+      } else if (param.scene) {
+        this.refrenceCode = decodeURIComponent(param.scene)
+      } else {
+        this.refrenceCode = ''
+      }
+      // 获取跳转页面来源
+      this.$parent.getLogin((code) => {
+        this.jscode = code
+      })
+      if (wepy.getStorageSync('phone') === '') {
+        wepy.clearStorageSync()
+        this.isNull = false
+      } else {
+        wepy.getSetting({
+          success: (res) => {
+            // res.authSetting['scope.userInfo']
+            if (wepy.getStorageSync('token')) {
+              this.$parent.getUser()
+              this.isNull = true
+              // 已经授权，获取新的token
+              var data = {
+                phone: wepy.getStorageSync('phone')
+              }
+              this.$parent.requestToken(data, () => {
+                this.goIndex()
+              }, () => {
+                this.showError()
+                this.$apply()
+              })
+            } else {
+              this.isNull = false
+            }
+            this.$apply()
+          }
+        })
+      }
+    }
+    onShow () {
+      if (wepy.getStorageSync('phone')) {
+        this.hasPhone = true
+      } else {
+        this.hasPhone = false
+      }
+    }
+  }
+</script>

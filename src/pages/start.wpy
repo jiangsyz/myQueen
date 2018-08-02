@@ -1,0 +1,242 @@
+<style lang="less" src="../less/login.less"></style>
+<style lang="less">
+  .app-info .app-name {
+    font-size: 18px;
+    color: #333;
+  }
+  .alert {
+    padding: 0 20px;
+    text-align: center
+  }
+  .alert .input-title {
+    margin:0 auto 20rpx;
+    position: relative;
+    width:100%;
+    border-bottom: 1px #eee solid;
+    input {
+      height: 100rpx;
+      line-height:100rpx;
+      font-size:32rpx;
+      width:400rpx;
+      margin:0 auto;
+      text-align: center;
+      position:relative;
+      z-index: 9;
+    }
+    .code{
+      position: absolute;
+      right:0;
+      top: 16rpx;
+      padding:10rpx 20rpx;
+      min-width:60rpx;
+      z-index:9999;
+      &.unavailable{
+        background: #ccc;
+      }
+    }
+  }
+  .placeholder{
+    font-size:32rpx;
+    color:#ccc;
+  }
+</style>
+<template>
+  <view class="login-container">
+    <view class="login">
+      <view class="app-info">
+        <image class="app-logo" src="http://p33mnuvro.bkt.clouddn.com/uploads/0705/153077871164247816.png" mode="widthFix"></image>
+        <image class="logo" src="../image/logo.png"></image>
+      </view>
+      <view class="alert" wx:if="{{!isNull}}">
+        <view class="alert-layer {{hasPhone ? 'hidden' : ''}}">
+          <view class="input-title">
+            <input type="number" placeholder="请填写手机号" placeholder-class="placeholder" @input="inputPhone" @blur="blurPhone"/>
+            <view class="default-button code {{isSending ? '' : 'unavailable'}}" @tap="sendCode" >{{codeText}}</view>
+          </view>
+          <view class="input-title"><input type="number" placeholder="请填写验证码" placeholder-class="placeholder" @blur="blurCode"/></view>
+          <button class="login-btn" hover-class="login-btn-active" @tap="login">确认登录</button>
+        </view>
+        <view class="alert-layer {{hasPhone ? 'show' : 'unshow'}}">
+          <view class="alert-title">网页由正善小程序开发</view>
+          <view class="alert-title">请确认授权以下信息</view>
+          <view class="alert-desc">
+            <view class="alert-text">获得你的公开信息（昵称、头像等）</view>
+          </view>
+          <button open-type="getUserInfo" @getuserinfo="bindGetUserInfo" class="login-btn" hover-class="login-btn-active" >绑定微信账号</button>
+        </view>
+        <view class="login-step">
+          <text class="{{hasPhone ? 'unactive' : 'active'}}"></text>
+          <text class="{{hasPhone ? 'active' : 'unactive'}}"></text>
+        </view> 
+      </view>
+      <view class="loading" wx:else>
+        <loading></loading>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import Loading from '../components/loading'
+
+  export default class Start extends wepy.page {
+    config = {
+      navigationBarTitleText: '欢迎'
+    }
+    data = {
+      codeText: '发送验证码',
+      phoneNumber: '',
+      code: '',
+      myreg: /^[1][3,4,5,7,8][0-9]{9}$/,
+      orderId: '',
+      isSending: true,
+      time: 60,
+      isNull: true,
+      countTime: '',
+      jscode: '',
+      hasPhone: false
+    }
+    components = {
+      loading: Loading
+    }
+    methods = {
+      inputPhone (e) {
+        this.phoneNumber = e.detail.value
+        return this.phoneNumber
+      },
+      blurPhone (e) {
+        this.phoneNumber = e.detail.value
+        return this.phoneNumber
+      },
+      blurCode (e) {
+        this.code = e.detail.value
+        return this.blurCode
+      },
+      sendCode () {
+        var _this = this
+        if (this.myreg.test(this.phoneNumber)) {
+          if (this.isSending) {
+            var data = {
+              phone: this.phoneNumber
+            }
+            this.$parent.HttpRequest.GetSignCode(data).then((res) => {
+              console.log(res)
+              if (res.data.error === 0) {
+                _this.isSending = false
+                _this.countTime = setInterval(() => {
+                  _this.time = _this.time - 1
+                  _this.codeText = this.time + 's'
+                  if (_this.time <= 0) {
+                    _this.time = 60
+                    _this.codeText = '发送验证码'
+                    _this.isSending = true
+                    clearInterval(_this.countTime)
+                  }
+                  _this.$apply()
+                }, 1000)
+                _this.orderId = res.data.data.orderId
+              }
+              _this.$apply()
+            })
+          }
+        } else {
+          wepy.showToast({
+            title: '请输入正确的手机号',
+            icon: 'none'
+          })
+        }
+      },
+      login () {
+        this.$parent.showLoading()
+        var _this = this
+        var data = {
+          orderId: this.orderId,
+          identifyingCode: this.code
+        }
+        this.$parent.HttpRequest.LoginByPhone(data).then((res) => {
+          console.log(res)
+          if (res.data.error === 0) {
+            _this.$parent.hideLoading()
+            var token = res.data.data.token
+            var timeOut = res.data.data.timeOut
+            wepy.setStorageSync('token', token)
+            wepy.setStorageSync('phone', _this.phoneNumber)
+            wepy.setStorageSync('timeout', timeOut)
+            _this.$parent.getUserLevel(token)
+            _this.hasPhone = true
+          } else {
+            _this.$parent.hideLoading()
+            wepy.showToast({
+              title: '登录失败',
+              icon: 'none',
+              image: '../image/cancel.png'
+            })
+          }
+        }).catch(() => {
+          // _this.$parent.showFail()
+        })
+      },
+      bindGetUserInfo (e) {
+        this.$parent.getLogin((code) => {
+          this.jscode = code
+          wepy.getSetting({
+            success: (res) => {
+              if (res.authSetting['scope.userInfo']) {
+                this.$parent.globalData.userInfo = e.detail.userInfo
+                var data = {
+                  jscode: this.jscode,
+                  encryptedData: e.detail.encryptedData,
+                  iv: e.detail.iv
+                }
+                this.$parent.HttpRequest.SendUserInfo(data).then((res) => {
+                  this.$parent.showLoading()
+                  console.log(res)
+                  if (res.data.error === 0) {
+                    var data = {
+                      phone: wepy.getStorageSync('phone')
+                    }
+                    this.$parent.requestToken(data, () => {
+                      this.$parent.hideLoading()
+                      wepy.switchTab({
+                        url: './index'
+                      })
+                    })
+                  }
+                })
+              } else {
+                wepy.showModal({
+                  title: '提示',
+                  content: '拒绝授权将无法正常使用小程序全部功能，请重新开启授权'
+                })
+              }
+            }
+          })
+        })
+      }
+    }
+    goIndex () {
+      wepy.switchTab({
+        url: './index'
+      })
+    }
+    onLoad () {
+      if (wepy.getStorageSync('token')) {
+        this.$parent.getUser()
+        this.isNull = true
+        var data = {
+          phone: wepy.getStorageSync('phone')
+        }
+        this.$parent.requestToken(data, () => {
+          this.goIndex()
+        })
+      } else {
+        this.isNull = false
+      }
+      this.$apply()
+    }
+    onUnload () {
+      clearInterval(this.countTime)
+    }
+  }
+</script>

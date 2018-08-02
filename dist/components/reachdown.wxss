@@ -1,0 +1,12 @@
+.isDown {
+  width: 100%;
+  text-align: center;
+  font-size: 28rpx;
+  color: #ccc;
+  line-height: 36rpx;
+  padding: 20rpx 0;
+  overflow: hidden;
+}
+.isDown text {
+  white-space: nowrap;
+}

@@ -1,0 +1,366 @@
+<style lang="less" src="../less/order.less"></style>
+<template>
+  <view class="container">
+    <menuList></menuList>
+    <view class="order-status">
+      <repeat for="{{package}}" item="item" index="index"><view class="{{current === index ? 'active' : ''}}" @tap.stop="checkPackage({{index}}, {{item.type}})">{{item.title}}</view></repeat>
+    </view>
+    <view wx:if="{{!isNull}}">
+      <repeat for="{{orderList}}" item="item" index="index">
+        <view class="cart-list" wx:if="{{!item.isNull}}">
+          <view class="content order-title">
+            <text class="font-normal order-num">订单编号：<text selectable="true">{{item.title}}</text><text selectable="false"></text></text>
+            <text class="font-normal order-status-txt {{item.status === 1 || item.status === 2? 'link' : ''}} {{item.status === 3? 'close' : ''}}">{{item.statusTxt}}</text>
+          </view>
+          <view class="item-box">
+            <view class="items">
+              <orderList :orderList.sync="item.orderDetail" :userLevel.sync="userLevel"></orderList>
+              <view class="more" @tap="goDetail({{item.id}})">
+                <text class="font-normal">查看全部详情 ({{item.count}}) <text class="iconfont icon-rightsj"></text></text>
+              </view>
+            </view>
+            <view class="order-edit">
+              <text class="iconfont icon-me_dd"></text>
+              <view class="status-layer">
+                <text class="font-normal" wx:if="{{item.status === 1}}">待付款<text class="link">￥{{item.pay}}</text> (含运费￥{{item.freight}})</text>
+                <text class="font-normal" wx:elif="{{item.status === 2}}">售后中</text>
+                <text class="font-normal" wx:elif="{{item.status === 3}}">交易关闭</text>
+                <text class="font-normal" wx:elif="{{(item.status === 5 && item.isReceive) || item.status === 6}}">交易完成</text>
+                <text class="font-normal" wx:elif="{{item.status <= 0}}">交易异常</text>
+                <text class="font-normal" wx:else>实付款<text class="link">￥{{item.pay}}</text> (含运费￥{{item.freight}})</text>
+                <view class="edit-button" >
+                  <button class="default-button" hover-class="default-button-hover" wx:if="{{item.status === 1}}" @tap="goPay({{item.id}})">付款</button>
+                  <button class="blank-button" hover-class="blank-button-hover" wx:if="{{item.status === 1}}" @tap="goAddress({{item.id}})">修改地址</button>
+                  <button class="blank-button" hover-class="blank-button-hover" wx:if="{{item.status === 1 || item.status === 4}}" @tap="cancel({{item.id}})">取消订单</button>
+                  <view wx:if="{{item.needAdd}}">
+                    <button class="default-button" hover-class="default-button-hover" wx:if="{{item.status === 5 && !item.isReceive}}" @tap="goReceive({{item.id}}, {{index}})">确认收货</button>
+                    <button class="blank-button" hover-class="blank-button-hover" wx:if="{{(item.status === 2 && item.deliverStatus >= 2) || item.status === 5 || item.status === 6}}" @tap="goLogistic({{item.id}}, {{item.status}})">查看物流</button>
+                  </view>
+                  <button class="blank-button" hover-class="blank-button-hover" open-type="contact" session-from="udesk|{{nick_name}}|{{avatar}}|customer^{{customer_info_str}}|note^{{note_info_str}}" wx:if="{{item.status === 5 || item.status === 6 || item.status <= 0}}" @contact="getOrderId({{item.title}})">售后申请</button>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </repeat>
+    </view>
+    <defect wx:elif="{{isNull && !isLoading}}" type="3"></defect>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import OrderList from '../components/orderlist'
+  import Defect from '../components/defect'
+  import Menu from '../components/menu'
+
+  export default class Order extends wepy.page {
+    config = {
+      navigationBarTitleText: '我的订单'
+    }
+    components = {
+      orderList: OrderList,
+      defect: Defect,
+      menuList: Menu
+    }
+    computed = {
+      isNull () {
+        if (this.orderList.length === 0) {
+          return true
+        } else {
+          return false
+        }
+      },
+      userLevel () {
+        if (this.$parent.globalData.userLevel === 0) {
+          return false
+        } else if (this.$parent.globalData.userLevel === 1) {
+          return true
+        }
+      }
+    }
+    data = {
+      token: '',
+      package: [{
+        title: '全部',
+        type: 'all'
+      }, {
+        title: '待付款',
+        type: 'unpaid'
+      }, {
+        title: '待发货',
+        type: 'undelivered'
+      }, {
+        title: '待收货',
+        type: 'unreceipted'
+      }, {
+        title: '售后',
+        type: 'refunding'
+      }],
+      orderStatus: ['异常', '待付款', '售后中', '已关闭', '待发货', '待收货', '交易完成'],
+      current: null,
+      orderType: 'all',
+      orderList: [],
+      pageSize: 5,
+      pageNum: 1,
+      totalPageNum: 0,
+      isLoading: true,
+      payment: true,
+      nick_name: '',
+      avatar: '',
+      customer_info_str: '',
+      note_info_str: '',
+      orderId: ''
+    }
+    methods = {
+      checkPackage (index, type) {
+        this.current = index
+        this.orderType = type
+        this.initData()
+      },
+      goDetail (id) {
+        wepy.navigateTo({
+          url: './orderDetail?id=' + id
+        })
+      },
+      cancel (id) {
+        wepy.showModal({
+          title: '提示',
+          content: '确认取消订单',
+          success: (res) => {
+            if (res.confirm) {
+              this.cancelOrder(id, () => {
+                this.initData()
+              })
+            }
+          }
+        })
+      },
+      goAddress (id) {
+        wepy.navigateTo({
+          url: './address?page=order&id=' + id
+        })
+      },
+      goLogistic (id, status) {
+        wepy.navigateTo({
+          url: './logistica?id=' + id + '&status=' + status
+        })
+      },
+      getOrderId (id) {
+        this.orderId = id
+      },
+      goReceive (id, index) {
+        this.token = this.$parent.getToken()
+        var data = {
+          token: this.token,
+          orderId: id
+        }
+        wepy.showModal({
+          title: '提示',
+          content: '是否确认收货',
+          success: (res) => {
+            if (res.confirm) {
+              this.$parent.HttpRequest.ReceiveOrder(data).then((res) => {
+                if (res.data.error === 0) {
+                  this.orderList[index].isReceive = true
+                }
+                this.$apply()
+              })
+            }
+          }
+        })
+      },
+      goPay (id) {
+        if (this.payment) {
+          this.token = this.$parent.getToken()
+          var data = {
+            token: this.token,
+            orderId: id,
+            appType: 'miniApp'
+          }
+          this.$parent.HttpRequest.PayService(data).then((res) => {
+            console.log(res)
+            if (res.data.error === 0) {
+              var data = res.data.data
+              var timeStamp = data.timestamp.toString()
+              var nonceStr = data.noncestr
+              var prepayid = 'prepay_id=' + data.prepayid
+              var signData = {
+                'appId': 'wx4fadd384b39658cd',
+                'timeStamp': timeStamp,
+                'nonceStr': nonceStr,
+                'package': prepayid,
+                'signType': 'MD5'
+              }
+              var sign = this.$parent.HttpRequest.getPaySign(signData)
+              wepy.requestPayment({
+                'timeStamp': timeStamp,
+                'nonceStr': nonceStr,
+                'package': prepayid,
+                'signType': 'MD5',
+                'paySign': sign,
+                'success': (res) => {
+                  if (res.errMsg === 'requestPayment:ok') {
+                    wepy.redirectTo({
+                      url: './order?orderType=undelivered'
+                    })
+                    // this.current = 2
+                    // this.orderType = 'undelivered'
+                    // this.initData()
+                  } else if (res.errMsg === 'requestPayment:cancel') {
+                    // 用户取消支付跳转订单列表
+                    this.$parent.payFail()
+                  }
+                },
+                'fail': (res) => {
+                  this.$parent.payFail()
+                },
+                'complete': (res) => {
+                  this.payment = true
+                }
+              })
+            } else {
+              this.$parent.payFail()
+            }
+          }).catch(() => {
+            this.$parent.payFail()
+          })
+        }
+        this.payment = false
+      }
+    }
+    initData (cb) {
+      this.pageNum = 1
+      this.orderList = []
+      this.initOrder(cb)
+    }
+    initOrder (cb) {
+      this.$parent.showLoading()
+      this.token = this.$parent.getToken()
+      this.isLoading = true
+      var _this = this
+      var data = {
+        token: this.token,
+        pageSize: this.pageSize,
+        pageNum: this.pageNum,
+        status: this.orderType
+      }
+      this.$parent.HttpRequest.GetOrderStatus(data).then((res) => {
+        if (this.pageNum === 1) {
+          this.orderList = []
+        }
+        console.log(res)
+        _this.isLoading = false
+        _this.$parent.hideLoading()
+        if (res.data.error === 0) {
+          var data = res.data.data
+          _this.totalPageNum = data.totalPageNum
+          data.orders.forEach((item) => {
+            var obj = {}
+            obj.id = item.id
+            obj.isReceive = false
+            obj.title = item.showId
+            obj.pay = item.pay
+            obj.freight = item.freight
+            obj.status = item.status
+            obj.deliverStatus = item.deliverStatus
+            obj.needAdd = item.isNeedAddress
+            obj.statusTxt = _this.orderStatus[item.status]
+            obj.count = item.buyingRecords.length
+            obj.orderDetail = _this.initChild(item.buyingRecords)
+            if (_this.orderList.length === 0) {
+              _this.orderList.push(obj)
+            } else {
+              var hasTwo = false
+              for (var i = 0; i < _this.orderList.length; i++) {
+                if (_this.orderList[i].id === item.id) {
+                  hasTwo = true
+                }
+              }
+              if (!hasTwo) {
+                _this.orderList.push(obj)
+              }
+            }
+            // _this.orderList.push(obj)
+          })
+          cb && cb()
+        } else {
+          if (_this.$parent.missToken) {
+            _this.initData(cb)
+          }
+        }
+        _this.$apply()
+      }).catch(() => {
+        _this.$parent.hideLoading()
+        _this.isLoading = false
+        // _this.$parent.showFail()
+      })
+    }
+    initChild (parent) {
+      var child = []
+      parent.forEach((item) => {
+        var obj = {}
+        obj.path = item.cover
+        obj.title = item.productName
+        obj.price = item.memberPrice
+        obj.oldprice = item.price
+        obj.id = item.productId
+        obj.sourceType = item.sourceType
+        obj.sourceId = item.salesUnitId
+        obj.detail = item.title + '×' + item.buyingCount
+        obj.count = item.buyingCount
+        obj.checked = false
+        obj.totalCount = item.keepCount
+        child.push(obj)
+      })
+      return child
+    }
+    cancelOrder (id, cb) {
+      this.token = this.$parent.getToken()
+      var _this = this
+      var data = {
+        token: this.token,
+        orderId: id
+      }
+      this.$parent.HttpRequest.CancelOrder(data).then((res) => {
+        console.log(res)
+        if (res.data.error === 0) {
+          cb && cb()
+        } else {
+          if (_this.$parent.missToken) {
+            // _this.token = this.$parent.getToken(res.data.error)
+          }
+        }
+      })
+    }
+    onReachBottom () {
+      // 显示加载状态
+      if (this.pageNum < this.totalPageNum) {
+        // 显示下一页数据
+        this.pageNum ++
+        this.initOrder()
+      }
+    }
+    onLoad (param) {
+      if (param.orderType) {
+        this.orderType = param.orderType
+        this.package.forEach((item, index) => {
+          if (item.type === param.orderType) {
+            this.current = index
+          }
+        })
+      } else {
+        this.current = 0
+      }
+      this.$apply()
+    }
+    onReady () {
+      this.initData(() => {
+        this.nick_name = this.$parent.getUserName()
+        this.avatar = this.$parent.getUserAvatar()
+        this.customer_info_str = this.$parent.getMessage()
+        this.note_info_str = this.$parent.getBusiness('订单列表页', null, this.orderId)
+      })
+    }
+  }
+</script>

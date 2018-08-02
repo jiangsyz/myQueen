@@ -1,0 +1,555 @@
+<style lang="less" src="less/iconfont.less"></style>
+<style lang="less" src="less/global.less"></style>
+<style lang="less" src="less/goodList.less"></style>
+
+<script>
+import wepy from 'wepy'
+import 'wepy-async-function'
+
+// import { setStore } from 'wepy-redux'
+// import configStore from './store'
+
+import HttpRequest from './service/HttpRequestServer'
+var Md5 = require('./service/md5')
+
+// const store = configStore()
+// setStore(store)
+
+export default class extends wepy.app {
+  config = {
+    pages: [
+      'pages/login',
+      'pages/start',
+      'pages/detail',
+      'pages/index',
+      'pages/cart',
+      'pages/system',
+      'pages/category',
+      'pages/search',
+      'pages/address',
+      'pages/newAdd',
+      'pages/editAdd',
+      'pages/paycart',
+      'pages/paybuy',
+      'pages/rules',
+      'pages/user',
+      'pages/collect',
+      'pages/logistica',
+      'pages/order',
+      'pages/orderDetail',
+      'pages/invoice',
+      'pages/applyVip',
+      'pages/service',
+      'pages/link',
+      'pages/custom'
+    ],
+    window: {
+      backgroundTextStyle: 'dark',
+      backgroundColor: '#f8f8f8',
+      navigationBarBackgroundColor: '#ec3d3a',
+      navigationBarTitleText: 'WeChat',
+      navigationBarTextStyle: 'white'
+    },
+    tabBar: {
+      color: '#282626',
+      selectedColor: '#cb1d1c',
+      backgroundColor: '#f8f8f8',
+      list: [{
+        pagePath: 'pages/index',
+        iconPath: 'image/index-default.png',
+        selectedIconPath: 'image/index-active.png',
+        text: '首页'
+      }, {
+        pagePath: 'pages/category',
+        iconPath: 'image/category-default.png',
+        selectedIconPath: 'image/category-active.png',
+        text: '分类'
+      }, {
+        pagePath: 'pages/cart',
+        iconPath: 'image/cart-default.png',
+        selectedIconPath: 'image/cart-active.png',
+        text: '购物车'
+      }, {
+        pagePath: 'pages/user',
+        iconPath: 'image/user-default.png',
+        selectedIconPath: 'image/user-active.png',
+        text: '个人中心'
+      }]
+    }
+  }
+
+  globalData = {
+    userInfo: null,
+    userLevel: null,
+    userHash: null,
+    code: null,
+    nickName: null,
+    userImage: null
+  }
+
+  missToken = false
+  getTokenTime = 0
+  httpId = []
+  errorHttpId = ''
+
+  constructor () {
+    super()
+    this.use('requestfix')
+    this.intercept('request', {
+      config (p) {
+        return p
+      },
+      success (p) {
+        if (p.statusCode === 200) {
+          if (p.data.error === undefined || p.data.error !== 0) {
+            this.errorHttpId = p.data.httpId
+          }
+          if (p.data.error !== undefined && p.data.error === -1 && p.data.msg === 'miss token') {
+            console.log('miss token')
+            this.missToken = true
+            if (this.getTokenTime < 3) {
+              this.getToken(p.data.error, () => {
+                this.missToken = false
+                this.getTokenTime = 0
+              }, () => {
+                this.missToken = true
+                this.getTokenTime ++
+              })
+            }
+            // this.getTokenTime++
+            // if (this.getTokenTime < 3) {
+            //   this.missToken = true
+            //   this.getToken(p.data.error)
+            // } else {
+            //   this.showFail()
+            //   this.missToken = false
+            // }
+          } else if (p.data.error !== undefined && p.data.error === -1 && p.data.msg === 'member locked') {
+            this.hideLoading()
+            wepy.clearStorage()
+            wepy.showModal({
+              title: '提示',
+              content: '当前账号已被锁定',
+              showCancel: false,
+              success: (res) => {
+                if (res.confirm) {
+                  wepy.redirectTo({
+                    url: './login'
+                  })
+                }
+              }
+            })
+          } else if (p.data.error !== undefined && p.data.error === -1) {
+            this.showFail(null, p.data.httpId)
+          } else if (p.data.error !== undefined && p.data.error === -2) {
+            this.showFail(p.data.msg, p.data.httpId)
+          } else if (p.data.error !== undefined && p.data.error === 0) {
+            this.missToken = false
+            this.getTokenTime = 0
+          }
+        } else {
+          this.missToken = false
+          this.getTokenTime = 0
+          this.showFail()
+        }
+        return p
+      },
+      fail (p) {
+        return p
+      },
+      complete (p) {
+        // 记录request info
+        if (p.statusCode === 200) {
+          if (p.data.httpId) {
+            if (this.httpId.length < 10) {
+              this.httpId.push(p.data.httpId)
+            } else {
+              this.httpId.shift()
+              this.httpId.push(p.data.httpId)
+            }
+          }
+        }
+        return p
+      }
+    })
+  }
+
+  // 判断tabbar回退页面
+  pageRoot = false
+
+  onLaunch() {}
+
+  getLogin (cb) {
+    wepy.login({
+      success: (res) => {
+        console.log(res)
+        cb && cb(res.code)
+        // 发送code
+      },
+      fail: () => {
+        wepy.showToast({
+          title: '网络连接失败',
+          icon: 'none',
+          image: '../image/cancel.png'
+        })
+      }
+    })
+  }
+
+  getUserInfo(e, code, refrenceCode, cb, fail) {
+    // this.globalData.userInfo = e.detail.userInfo
+    console.log(e, code, refrenceCode)
+    var data = {
+      jscode: code,
+      encryptedData: e.detail.encryptedData,
+      iv: e.detail.iv,
+      referenceId: refrenceCode
+    }
+    this.HttpRequest.SendCode(data).then((res) => {
+      console.log(res)
+      if (res.data.error !== undefined && res.data.error === 0) {
+        var phoneNumber = res.data.data.phone
+        wepy.setStorageSync('phone', phoneNumber)
+        cb && cb()
+        // var data = {
+        //   phone: phoneNumber
+        // }
+        // this.requestToken(data, cb)
+      } else {
+        fail && fail()
+      }
+    }).catch(() => {
+      wepy.showModal({
+        title: '登录失败',
+        content: '请检查网络连接',
+        showCancel: false,
+        success: (res) => {
+          if (res.confirm) {
+            fail && fail()
+          }
+        }
+      })
+    })
+  }
+  // 已有手机号获取token
+  async requestToken (data, cb, fail) {
+    await this.HttpRequest.UserLogin(data).then((res) => {
+      if (res.data.error !== undefined && res.data.error === 0) {
+        var token = res.data.data.token
+        var timeOut = res.data.data.timeOut
+        wepy.setStorageSync('token', token)
+        wepy.setStorageSync('timeout', timeOut)
+        // 设置global的user level 和 hash
+        this.getUserLevel(token, () => {
+          cb && cb(token)
+        }, () => {
+          fail && fail()
+        })
+      } else {
+        fail && fail()
+      }
+    }).catch(() => {
+      fail && fail()
+    })
+  }
+  // 判断token是否过期
+  refreshToken () {
+    // 判断token是否过期 如果没过期直接返回token值
+    var nowTime = Math.floor(new Date().getTime() / 1000)
+    var timeOut = wepy.getStorageSync('timeout')
+    if (nowTime > timeOut) {
+      return false
+    } else {
+      return true
+    }
+  }
+
+  // 返回当前token
+  getToken (error, refrence, cb, fail) {
+    var refrenceCode = ''
+    if (refrence) {
+      refrenceCode = refrence
+    }
+    if (wepy.getStorageSync('token') === '') {
+      wepy.navigateTo({
+        url: './login?refrenceCode=' + refrenceCode
+      })
+    } else {
+      if (!this.refreshToken() || error === -1) {
+        // token过期 重新发送请求获取新的token
+        var data = {
+          phone: wepy.getStorageSync('phone')
+        }
+        this.requestToken(data, cb, fail)
+        return wepy.getStorageSync('token')
+      } else {
+        return wepy.getStorageSync('token')
+      }
+    }
+  }
+
+  // 获取 user level 和 hash
+  getUserLevel (token, cb, fail) {
+    var _this = this
+    this.HttpRequest.GetUserInfo({token: token}).then((res) => {
+      if (res.data.error !== undefined && res.data.error === 0) {
+        _this.globalData.userLevel = res.data.data.level
+        _this.globalData.userHash = res.data.data.memberHash
+        _this.globalData.vipEnd = res.data.data.vipEnd
+        _this.globalData.reduction = res.data.data.reduction
+        _this.globalData.memberId = res.data.data.memberId
+        _this.globalData.expectedReduction = res.data.data.expectedReduction
+        cb && cb()
+      } else {
+        fail && fail()
+      }
+    }).catch(() => {
+      fail && fail()
+    })
+  }
+  // 判断当前user hash是否需要重置
+  resetUserLevel (hash, token, cb) {
+    if (hash !== this.globalData.userHash) {
+      this.getUserLevel(token, cb)
+    }
+  }
+  // 存用户global信息
+  getUser (cb) {
+    wepy.getUserInfo({
+      success: (res) => {
+        this.globalData.userInfo = res.userInfo
+        cb && cb()
+      }
+    })
+  }
+  // 发送用户昵称
+  sendNickname (token, name) {
+    var data = {
+      token: token,
+      nickName: this.base64Encode(name)
+    }
+    console.log(data)
+    this.HttpRequest.SetNickname(data).then((res) => {
+      console.log(res)
+    })
+  }
+  showLoading () {
+    wepy.showLoading({
+      title: '加载中',
+      icon: 'loading'
+    })
+  }
+  hideLoading () {
+    wepy.hideLoading()
+  }
+  showFail (error, content) {
+    // wepy.showToast({
+    //   title: error || '加载失败',
+    //   icon: 'none',
+    //   image: '../image/cancel.png'
+    // })/
+    var contentTxt = content || '5b4813d15ee41'
+    wepy.showModal({
+      title: error || '系统开小差了',
+      content: '请截图联系客服 ' + contentTxt,
+      showCancel: false
+    })
+  }
+  payFail () {
+    wepy.showModal({
+      title: '提示',
+      content: '支付失败',
+      showCancel: false,
+      success: (res) => {
+        if (res.confirm) {
+          wepy.redirectTo({
+            url: './order?orderType=unpaid'
+          })
+        }
+      }
+    })
+  }
+  disableApi () {
+    wepy.showModal({
+      title: '提示',
+      content: '当前微信版本过低，无法使用该功能，请升级到最新微信版本后重试。'
+    })
+  }
+  // 时间戳格式化
+  dateFormat (timestamp, formats) {
+    formats = formats || 'Y-m-d'
+    var zero = function (value) {
+      if (value < 10) {
+        return '0' + value
+      }
+      return value
+    }
+    var myDate = timestamp ? new Date(timestamp) : new Date()
+    var year = myDate.getFullYear()
+    var month = zero(myDate.getMonth() + 1)
+    var day = zero(myDate.getDate())
+    var hour = zero(myDate.getHours())
+    var minite = zero(myDate.getMinutes())
+    var second = zero(myDate.getSeconds())
+    return formats.replace(/Y|m|d|H|i|s/ig, function (matches) {
+      return ({
+        Y: year,
+        m: month,
+        d: day,
+        H: hour,
+        i: minite,
+        s: second
+      })[matches]
+    })
+  }
+  // 过滤emoji
+  filteremoji (str) {
+    var ranges = [
+      '\ud83c[\udf00-\udfff]',
+      '\ud83d[\udc00-\ude4f]',
+      '\ud83d[\ude80-\udeff]'
+    ]
+    return str.replace(new RegExp(ranges.join('|'), 'g'), '')
+  }
+  // 客服消息
+  getUserName () {
+    if (!this.globalData.userInfo) {
+      this.getUser()
+    }
+    return this.filteremoji(this.globalData.userInfo.nickName)
+  }
+  getUserAvatar () {
+    if (!this.globalData.userInfo) {
+      this.getUser()
+    }
+    return this.globalData.userInfo.avatarUrl
+  }
+  getMessage (pageDetail, tags) {
+    var messageObj = {
+      'level': '',
+      'cellphones': ''
+    }
+    if (this.globalData.userLevel === 0) {
+      messageObj.level = 'normal'
+    } else if (this.globalData.userLevel === 1) {
+      messageObj.level = 'vip'
+    }
+    messageObj.cellphones = [['', wepy.getStorageSync('phone')]]
+    // messageObj.description = pageDetail
+    // messageObj.tags = pageDetail + ',' + tags
+    // messageObj.custom_fields = {
+    //   'TextField_13010': 'test'
+    // }
+    return JSON.stringify(messageObj)
+  }
+  getBusiness (title, content, orderId) {
+    var phone = ''
+    if (wepy.getStorageSync('phone') !== '') {
+      phone = wepy.getStorageSync('phone')
+    }
+    var noteObj = {
+      'title': title,
+      'custom_fields': {
+        'TextField_28227': content,
+        'TextField_28233': orderId,
+        'TextField_29513': phone
+      }
+    }
+    return JSON.stringify(noteObj)
+  }
+
+  // base64 编码
+  base64Encode (str) {
+    var c1 = ''
+    var c2 = ''
+    var c3 = ''
+    var base64EncodeChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
+    var i = 0
+    var len = str.length
+    var strin = ''
+    while (i < len) {
+      c1 = str.charCodeAt(i++) & 0xff
+      if (i === len) {
+        strin += base64EncodeChars.charAt(c1 >> 2)
+        strin += base64EncodeChars.charAt((c1 & 0x3) << 4)
+        strin += '=='
+        break
+      }
+      c2 = str.charCodeAt(i++)
+      if (i === len) {
+        strin += base64EncodeChars.charAt(c1 >> 2)
+        strin += base64EncodeChars.charAt(((c1 & 0x3) << 4) | ((c2 & 0xF0) >> 4))
+        strin += base64EncodeChars.charAt((c2 & 0xF) << 2)
+        strin += '='
+        break
+      }
+      c3 = str.charCodeAt(i++)
+      strin += base64EncodeChars.charAt(c1 >> 2)
+      strin += base64EncodeChars.charAt(((c1 & 0x3) << 4) | ((c2 & 0xF0) >> 4))
+      strin += base64EncodeChars.charAt(((c2 & 0xF) << 2) | ((c3 & 0xC0) >> 6))
+      strin += base64EncodeChars.charAt(c3 & 0x3F)
+    }
+    return strin
+  }
+
+  // base64 解码
+  base64Decode (input) {
+    var base64EncodeChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
+    var output = ''
+    var chr1 = ''
+    var chr2 = ''
+    var chr3 = ''
+    var enc1 = ''
+    var enc2 = ''
+    var enc3 = ''
+    var enc4 = ''
+    var i = 0
+    input = input.replace(/[^A-Za-z0-9+/=]/g, '')
+    while (i < input.length) {
+      enc1 = base64EncodeChars.indexOf(input.charAt(i++))
+      enc2 = base64EncodeChars.indexOf(input.charAt(i++))
+      enc3 = base64EncodeChars.indexOf(input.charAt(i++))
+      enc4 = base64EncodeChars.indexOf(input.charAt(i++))
+      chr1 = (enc1 << 2) | (enc2 >> 4)
+      chr2 = ((enc2 & 15) << 4) | (enc3 >> 2)
+      chr3 = ((enc3 & 3) << 6) | enc4
+      output = output + String.fromCharCode(chr1)
+      if (enc3 !== 64) {
+        output = output + String.fromCharCode(chr2)
+      }
+      if (enc4 !== 64) {
+        output = output + String.fromCharCode(chr3)
+      }
+    }
+    return this.utf8Decode(output)
+  }
+
+  // utf8
+  utf8Decode (utftext) {
+    var string = ''
+    let i = 0
+    let c = 0
+    let c1 = 0
+    let c2 = 0
+    while (i < utftext.length) {
+      c = utftext.charCodeAt(i)
+      if (c < 128) {
+        string += String.fromCharCode(c)
+        i++
+      } else if ((c > 191) && (c < 224)) {
+        c1 = utftext.charCodeAt(i + 1)
+        string += String.fromCharCode(((c & 31) << 6) | (c1 & 63))
+        i += 2
+      } else {
+        c1 = utftext.charCodeAt(i + 1)
+        c2 = utftext.charCodeAt(i + 2)
+        string += String.fromCharCode(((c & 15) << 12) | ((c1 & 63) << 6) | (c2 & 63))
+        i += 3
+      }
+    }
+    return string
+  }
+  HttpRequest = new HttpRequest()
+  Md5 = Md5.hexMD5
+}
+</script>

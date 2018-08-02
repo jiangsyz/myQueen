@@ -1,0 +1,391 @@
+<style lang="less" src="../less/orderDetail.less"></style>
+
+<template>
+  <view class="container">
+    <view wx:if="{{!isNull}}">
+      <view class="orderStatus">
+        <text class="iconfont icon-bgicon"><text class="iconfont icon-more" wx:if="{{status !== 3}}"></text></text>
+        <text class="font-normal {{status === 3 ? 'gray' : ''}} {{status === 1 || status === 2 ? 'link' : ''}}">{{status === 1 && !remainTime ? initTxt : statusTxt}}</text>
+        <text class="font-normal txt-status remain" wx:if="{{status === 1 && remainTime && !isStop}}">
+          <text class="font-normal">仅剩余：{{remainTime}}</text>
+          <text class="font-normal">待付款：￥{{pay}}</text>
+        </text>
+        <text class="font-normal txt-status" wx:elif="{{remainTime === 0 && status === 1 && isStop}}">支付超时</text>
+        <text class="font-normal txt-status" wx:elif="{{status === 2 && address != false}}">
+          售后中
+        </text>
+        <text class="font-normal txt-status" wx:elif="{{status === 3}}">
+          交易关闭
+        </text>
+      </view>
+      <view class="orderStatus address" wx:if="{{address && Object.keys(address).length !== 0}}">
+        <text class="iconfont icon-ksj_dz"></text>
+        <text class="font-normal">{{address.name}}</text>
+        <text class="font-normal gray">{{address.phone}}</text>
+        <text class="font-normal block">{{address.detail}}</text>
+      </view>
+      <repeat for="{{order}}" item="item" index="index">
+        <view class="cart-list" wx:if="{{!item.isNull}}">
+          <view class="content order-title">
+            <text class="title"><text class="iconfont {{item.iconClass}}"></text>{{item.title}}</text>
+          </view>
+          <view class="item-box">
+            <view class="items">
+              <orderList :orderList.sync="item.orderDetail" :userLevel.sync="userLevel"></orderList>
+            </view>
+          </view>
+        </view>
+      </repeat>
+      <view class="orderInfo">
+        <text class="font-normal label">订单编号：</text>
+        <text class="font-normal right" selectable="true">{{orderId}}</text><text selectable="false"></text>
+      </view>
+      <view class="orderInfo">
+        <text class="font-normal label">创建时间：</text>
+        <text class="font-normal right">{{createTime}}</text>
+      </view>
+      <view class="orderInfo">
+        <text class="font-normal label">备注：</text>
+        <text class="font-normal right">{{memo}}</text>
+      </view>
+      <view class="orderInfo spacing">
+        <text class="font-normal label">商品总额：</text>
+        <text class="font-normal right">￥{{pay}}</text>
+      </view>
+      <view class="orderTotal" wx:if="{{!isHidden}}">
+        <text class="iconfont icon-me_dd"></text>
+        <view class="status-layer">
+          <text class="font-normal" wx:if="{{status === 1}}">待付款<text class="link">￥{{pay}}</text> (含运费￥{{freight}})</text>
+          <text class="font-normal" wx:elif="{{status === 2}}">售后中</text>
+          <text class="font-normal" wx:elif="{{status === 3}}">交易已关闭</text>
+          <text class="font-normal" wx:elif="{{status <= 0}}">交易异常</text>
+          <text class="font-normal" wx:elif="{{(status === 5 && isReceive) || status === 6}}">交易完成</text>
+          <text class="font-normal" wx:else>实付款<text class="link">￥{{pay}}</text> (含运费￥{{freight}})</text>
+          <view class="edit-button">
+            <button class="default-button" hover-class="default-button-hover" wx:if="{{status === 1}}" @tap="goPay">付款</button>
+            <button class="blank-button" hover-class="blank-button-hover" wx:if="{{status === 1}}" @tap="goAddress">修改地址</button>
+            <button class="blank-button" hover-class="blank-button-hover" wx:if="{{status === 1 || status === 4}}" @tap="cancel">取消订单</button>
+            <view wx:if="{{address && Object.keys(address).length !== 0}}">
+              <button class="default-button" hover-class="default-button-hover" wx:if="{{status === 5 && !isReceive}}" @tap="goReceive">确认收货</button>
+              <button class="blank-button" hover-class="blank-button-hover" wx:if="{{(status === 2 && deliverStatus >= 2) || status === 5 || status === 6}}" @tap="goLogistic">查看物流</button>
+            </view>
+            <button class="blank-button" hover-class="blank-button-hover" open-type="contact" session-from="udesk|{{nick_name}}|{{avatar}}|customer^{{customer_info_str}}|note^{{note_info_str}}" wx:if="{{status === 5 || status === 6 || status <= 0}}">售后申请</button>
+          </view>
+        </view>
+      </view>
+      <view class="orderTotal" wx:else><text class="font-normal">订单已取消</text></view>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import OrderList from '../components/orderlist'
+
+  export default class OrderDetail extends wepy.page {
+    config = {
+      navigationBarTitleText: '订单详情'
+    }
+    data = {
+      token: '',
+      id: '',
+      orderStatus: ['异常', '待付款', '售后中', '订单关闭', '待发货', '待收货', '交易完成'],
+      statusTxt: '',
+      status: '',
+      address: {},
+      order: [],
+      orderId: '',
+      createTime: '',
+      memo: '',
+      pay: '',
+      deliverStatus: '',
+      finalPrice: '',
+      freight: '',
+      remainTime: '',
+      isHidden: false,
+      initTxt: '待付款',
+      isStop: false,
+      timeInterval: '',
+      payment: true,
+      nick_name: '',
+      avatar: '',
+      customer_info_str: '',
+      note_info_str: '',
+      isReceive: false
+    }
+    computed = {
+      isNull () {
+        if (this.order.length === 0) {
+          return true
+        } else {
+          return false
+        }
+      },
+      userLevel () {
+        if (this.$parent.globalData.userLevel === 0) {
+          return false
+        } else if (this.$parent.globalData.userLevel === 1) {
+          return true
+        }
+      }
+    }
+    components = {
+      orderList: OrderList
+    }
+    methods = {
+      cancel () {
+        wepy.showModal({
+          title: '提示',
+          content: '确认取消订单',
+          success: (res) => {
+            if (res.confirm) {
+              this.cancelOrder(() => {
+                this.isHidden = true
+              })
+              this.clear()
+            }
+          }
+        })
+      },
+      goAddress () {
+        wepy.redirectTo({
+          url: './address?page=orderdetail&id=' + this.id
+        })
+        this.clear()
+      },
+      goLogistic () {
+        wepy.navigateTo({
+          url: './logistica?id=' + this.id
+        })
+      },
+      goReceive () {
+        this.token = this.$parent.getToken()
+        var data = {
+          token: this.token,
+          orderId: this.id
+        }
+        wepy.showModal({
+          title: '提示',
+          content: '是否确认收货',
+          success: (res) => {
+            if (res.confirm) {
+              this.$parent.HttpRequest.ReceiveOrder(data).then((res) => {
+                if (res.data.error === 0) {
+                  this.isReceive = true
+                }
+                this.$apply()
+              })
+            }
+          }
+        })
+      },
+      goPay () {
+        if (this.payment) {
+          this.token = this.$parent.getToken()
+          var data = {
+            token: this.token,
+            orderId: this.id,
+            appType: 'miniApp'
+          }
+          this.$parent.HttpRequest.PayService(data).then((res) => {
+            console.log(res)
+            if (res.data.error === 0) {
+              var data = res.data.data
+              var timeStamp = data.timestamp.toString()
+              var nonceStr = data.noncestr
+              var prepayid = 'prepay_id=' + data.prepayid
+              var signData = {
+                'appId': 'wx4fadd384b39658cd',
+                'timeStamp': timeStamp,
+                'nonceStr': nonceStr,
+                'package': prepayid,
+                'signType': 'MD5'
+              }
+              var sign = this.$parent.HttpRequest.getPaySign(signData)
+              wepy.requestPayment({
+                'timeStamp': timeStamp,
+                'nonceStr': nonceStr,
+                'package': prepayid,
+                'signType': 'MD5',
+                'paySign': sign,
+                'success': (res) => {
+                  if (res.errMsg === 'requestPayment:ok') {
+                    // 用户支付成功跳转首页
+                    this.clear()
+                    // wepy.switchTab({
+                    //   url: './index'
+                    // })
+                    wepy.redirectTo({
+                      url: './order?orderType=undelivered'
+                    })
+                  } else if (res.errMsg === 'requestPayment:cancel') {
+                    // 用户取消支付跳转订单列表
+                    this.$parent.payFail()
+                  }
+                },
+                'fail': (res) => {
+                  this.$parent.payFail()
+                },
+                'complete': (res) => {
+                  this.payment = true
+                }
+              })
+            } else {
+              this.$parent.payFail()
+            }
+          }).catch(() => {
+            this.$parent.payFail()
+          })
+        }
+        this.payment = false
+      }
+    }
+    initData (cb) {
+      this.token = this.$parent.getToken()
+      this.remainTime = 0
+      this.$parent.showLoading()
+      this.order = []
+      var _this = this
+      var data = {
+        token: this.token,
+        orderId: this.id
+      }
+      this.$parent.HttpRequest.GetOrderDetail(data).then((res) => {
+        console.log(res)
+        _this.$parent.hideLoading()
+        if (res.data.error === 0) {
+          var data = res.data.data
+          _this.statusTxt = _this.orderStatus[data.status]
+          _this.status = data.status
+          _this.deliverStatus = data.deliverStatus
+          _this.orderId = data.showId
+          _this.createTime = _this.$parent.dateFormat(data.createTime * 1000, 'Y-m-d H:i:s')
+          _this.memo = data.memo ? data.memo[0].val : ''
+          _this.pay = data.pay
+          _this.freight = data.freight
+          // _this.initLogistica('shunfeng', data.showId)
+          if (data.payRemainingTime) {
+            _this.interval(data.payRemainingTime)
+          }
+          if (data.address) {
+            _this.address.name = data.address.name
+            _this.address.phone = data.address.phone
+            _this.address.detail = data.address.fullAreaName + data.address.address
+          } else {
+            _this.address = ''
+          }
+          _this.finalPrice = data.finalPrice
+          data.buyingRecords.forEach((item) => {
+            var obj = {}
+            obj.title = item.title
+            if (item.title === '冷链配送') {
+              obj.iconClass = 'icon-new_llps'
+            } else if (item.title === '常规配送') {
+              obj.iconClass = 'icon-new_cgps'
+            }
+            obj.orderDetail = _this.initChild(item.buyingRecords)
+            _this.order.push(obj)
+          })
+          cb && cb()
+        } else {
+          if (_this.$parent.missToken) {
+            _this.initData()
+          }
+        }
+        _this.$apply()
+      }).catch(() => {
+        _this.$parent.hideLoading()
+        // _this.$parent.showFail()
+      })
+    }
+    initChild (parent) {
+      var child = []
+      parent.forEach((item) => {
+        var obj = {}
+        obj.path = item.cover
+        obj.title = item.productName
+        obj.price = item.memberPrice
+        obj.oldprice = item.price
+        obj.id = item.productId
+        obj.sourceType = item.sourceType
+        obj.sourceId = item.salesUnitId
+        obj.detail = item.title + '×' + item.buyingCount
+        obj.count = item.buyingCount
+        obj.checked = false
+        obj.totalCount = item.keepCount
+        child.push(obj)
+      })
+      return child
+    }
+    cancelOrder (cb) {
+      this.token = this.$parent.getToken()
+      var _this = this
+      var data = {
+        token: this.token,
+        orderId: this.id
+      }
+      this.$parent.HttpRequest.CancelOrder(data).then((res) => {
+        console.log(res)
+        if (res.data.error === 0) {
+          _this.isStop = true
+          cb && cb()
+        } else {
+          if (_this.$parent.missToken) {
+            _this.token = _this.$parent.getToken(res.data.error)
+          }
+        }
+        _this.$apply()
+      })
+    }
+    initLogistica (com, num) {
+      this.token = this.$parent.getToken()
+      var _this = this
+      var data = {
+        com: com,
+        num: num
+      }
+      this.$parent.HttpRequest.GetLogistica(data).then((res) => {
+        console.log(res)
+        if (res.data.error === 0) {
+        } else {
+          if (_this.$parent.missToken) {
+            // _this.token = this.$parent.getToken(res.data.error)
+          }
+        }
+      })
+    }
+    interval (time) {
+      var _this = this
+      this.timeInterval = setInterval(() => {
+        time--
+        if (time > 0) {
+          _this.remainTime = (time - time % 60) / 60 + '分' + time % 60 + '秒'
+        } else {
+          _this.remainTime = 0
+          _this.initTxt = '交易关闭'
+          _this.clear()
+        }
+        _this.$apply()
+      }, 1000)
+    }
+    clear () {
+      clearInterval(this.timeInterval)
+    }
+    onLoad (param) {
+      this.id = param.id
+      this.$apply()
+    }
+    onShow () {
+      this.clear()
+      this.initData(() => {
+        this.nick_name = this.$parent.getUserName()
+        this.avatar = this.$parent.getUserAvatar()
+        this.customer_info_str = this.$parent.getMessage()
+        this.note_info_str = this.$parent.getBusiness('订单详情页', null, this.orderId)
+      })
+    }
+    onUnload () {
+      this.clear()
+    }
+  }
+</script>

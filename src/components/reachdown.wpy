@@ -1,0 +1,30 @@
+<style type="less">
+  .isDown{
+    width:100%;
+    text-align:center;
+    font-size:28rpx;
+    color:#ccc;
+    line-height:36rpx;
+    padding:20rpx 0;
+    overflow: hidden;
+    text{
+      white-space:nowrap;
+    }
+  }
+</style>
+<template>
+  <view>
+    <view class="isDown">
+      <text>————————— 已加载完毕 —————————</text>
+    </view>
+  </view>
+</template>
+<script>
+  import wepy from 'wepy'
+
+  export default class Defect extends wepy.component {
+    onLoad () {
+      this.$apply()
+    }
+  }
+</script>

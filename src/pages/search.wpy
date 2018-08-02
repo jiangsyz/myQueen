@@ -1,0 +1,163 @@
+<style lang="less" src="../less/search.less"></style>
+
+<template>
+  <view class="container">
+    <view class="search-layer">
+      <view class="search-input">
+        <image src="../image/search.png"></image>
+        <form @reset="clearInput">
+        <input type="text" placeholder="输入关键词搜索商品，如：西冷" placeholder-class="placeholder" value="{{keywords}}" @input="keySearch"/>
+        <button class="clear-btn" form-type="reset"><text class="iconfont icon-kf_qxbtn"></text></button>
+        </form>
+      </view>
+      <view class="search-button">
+        <view class="search-cancel {{isSearch ? 'search-confirm' : ''}}" @tap="doSearch"><text>{{isSearch ? '搜索' : '取消'}}</text></view>
+      </view>
+    </view>
+    <view class="content" wx:if="{{isNull}}">
+      <searchResult :goodsItem.sync="goods" @goodsTap.user="goDetail"></searchResult>
+    </view>
+    <defect wx:else><view slot="lost-category"></view></defect>
+    <isDown wx:if="{{isDown}}"></isDown>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import Goods from '../components/goods'
+  import Defect from '../components/defect'
+  import Reachdown from '../components/reachdown'
+
+  export default class Search extends wepy.page {
+    config = {
+      navigationBarTitleText: '搜索'
+    }
+    components = {
+      searchResult: Goods,
+      defect: Defect,
+      isDown: Reachdown
+    }
+    data = {
+      parentTab: '',
+      goods: [],
+      keywords: '',
+      pageSize: 5,
+      pageNum: 1,
+      isDown: false,
+      totalPageNum: ''
+    }
+    onShow () {
+    }
+    computed = {
+      isSearch () {
+        if (this.keywords === '') {
+          return false
+        } else {
+          return true
+        }
+      },
+      isNull () {
+        if (this.goods.length === 0) {
+          return false
+        } else {
+          return true
+        }
+      }
+    }
+    methods = {
+      goDetail (id) {
+        wepy.navigateTo({
+          url: './detail?id=' + id
+        })
+      },
+      clearInput () {
+        this.keywords = ''
+      },
+      keySearch (e) {
+        this.keywords = e.detail.value
+      },
+      doSearch () {
+        if (this.isSearch) {
+          this.goods = []
+          this.getResult()
+        } else {
+          if (this.parentTab === 'category') {
+            wepy.switchTab({
+              url: './category'
+            })
+          } else {
+            wepy.switchTab({
+              url: './index'
+            })
+          }
+        }
+      }
+    }
+    onReachBottom () {
+      // 显示加载状态
+      if (this.pageNum < this.totalPageNum) {
+        // 显示下一页数据
+        this.pageNum ++
+        this.getResult()
+      } else {
+        if (this.goods.length !== 0) {
+          this.isDown = true
+        }
+      }
+    }
+    getResult () {
+      this.$parent.showLoading()
+      this.isDown = false
+      var _this = this
+      const token = this.$parent.getToken()
+      var data = {
+        pageSize: this.pageSize,
+        pageNum: this.pageNum,
+        search: encodeURI(this.keywords),
+        token: token
+      }
+      this.$parent.HttpRequest.SearchHttp(data).then((res) => {
+        console.log(res)
+        _this.$parent.hideLoading()
+        if (res.data.error === 0) {
+          _this.totalPageNum = res.data.data.totalPageNum
+          var data = res.data.data.spus
+          if (data.length === 0) {
+            _this.isNull = true
+          } else {
+            _this.isNull = false
+            if (res.data.data.totalCount <= this.pageSize) {
+              _this.isDown = true
+            } else {
+              _this.isDown = false
+            }
+          }
+          data.forEach((item) => {
+            var good = {}
+            good.path = item.cover
+            good.title = item.title
+            good.price = item.memberPrice
+            good.oldprice = item.price
+            good.detail = item.viceTitle
+            good.reduction = item.reduction
+            good.descript = item.desc
+            good.id = item.sourceId
+            _this.goods.push(good)
+          })
+        } else {
+          if (_this.$parent.missToken) {
+            _this.getResult()
+          }
+        }
+        _this.$apply()
+      }).catch(() => {
+        _this.$parent.hideLoading()
+        // _this.$parent.showFail()
+      })
+    }
+    onLoad (parent) {
+      this.parentTab = parent.page
+      this.$apply()
+    }
+  }
+</script>

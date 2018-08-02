@@ -1,0 +1,66 @@
+<style lang="less" src="../less/counter.less"></style>
+
+<template>
+  <view class="counter">
+    <view @tap.stop="plusTap" class="counter-btn {{isDisabled || disable ? 'disable' : ''}}" data-id="{{sourceId}}">  +  </view>
+    <input type="number" @input="inputTap" @blur="blurTap" class="counter-btn number {{isDisabled ? 'disable' : ''}}" value="{{num}}" focus="{{autoFocus}}" data-id="{{sourceId}}" disabled="{{isDisabled}}"/> 
+    <view @tap.stop="minusTap" class="counter-btn minusBtn {{isDisabled || !isAble ? '' : 'able'}}" data-id="{{sourceId}}">  -  </view>
+  </view>
+</template>
+<script>
+  import wepy from 'wepy'
+  
+  export default class Counter extends wepy.component {
+    props = {
+      num: {
+        type: [Number, String],
+        default: 1,
+        twoWay: true
+      },
+      sourceId: {
+        type: Number,
+        default: null
+      },
+      isDisabled: {
+        type: Boolean,
+        default: false
+      }
+    }
+    computed = {
+      isAble () {
+        if (this.num <= 1) {
+          return false
+        } else {
+          return true
+        }
+      },
+      disable () {
+        if (this.num >= this.maxCount) {
+          return true
+        } else {
+          return false
+        }
+      }
+    }
+    data = {
+    }
+    methods = {
+      plusTap (e) {
+        this.disable = false
+        this.$emit('plusEdit', e)
+      },
+      minusTap (e) {
+        this.$emit('minusEdit', e)
+      },
+      inputTap (e) {
+        this.$emit('keyEdit', e.detail.value, e)
+      },
+      blurTap(e) {
+        this.$emit('blurEdit', e.detail.value, e)
+      }
+    }
+    onLoad () {
+      this.$apply()
+    }
+  }
+</script>

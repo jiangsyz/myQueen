@@ -1,0 +1,88 @@
+/* -- base color -- */
+/* -- base fontSize -- */
+/* -- base lineHeight -- */
+/* -- Mixin -- */
+.goods {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  padding: 30rpx 0 20rpx;
+  min-height: 200rpx;
+  border-bottom: 1px #eeeeee solid;
+}
+.goods:last-child {
+  border-bottom: none;
+}
+.goods.expire {
+  position: relative;
+}
+.goods.expire .expire-layer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 99;
+  line-height: 200rpx;
+  text-align: center;
+  font-size: 28rpx;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.2);
+}
+.goods.expire .goods-detail .goods-detail-title,
+.goods.expire .goods-detail .goods-detail-price {
+  color: #999999;
+}
+.goods .goods-image {
+  min-height: 200rpx;
+  float: left;
+  border: 1px #eeeeee solid;
+  width: 200rpx;
+  overflow: hidden;
+  position: relative;
+}
+.goods .goods-image image {
+  height: 200rpx;
+  width: 200rpx;
+  position: absolute;
+  top: 50%;
+  left: 0;
+  margin-top: -100rpx;
+}
+.goods .goods-detail {
+  width: 65%;
+  float: left;
+  padding-left: 5%;
+  color: #333333;
+}
+.goods .goods-detail .goods-detail-title {
+  font-size: 32rpx;
+  line-height: 40rpx;
+  min-height: 80rpx;
+  height: 80rpx;
+  overflow: hidden;
+  display: -webkit-box;
+  word-break: break-all;
+  text-overflow: ellipsis;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.goods .goods-detail .goods-detail-price {
+  font-size: 36rpx;
+  color: #ec3d3a;
+  display: inline-block;
+}
+.goods .goods-detail .goods-detail-price .iconfont {
+  font-size: 36rpx;
+}
+.goods .goods-detail .goods-detail-price .price {
+  font-size: 24rpx;
+}
+.goods .goods-detail .goods-detail-oldprice,
+.goods .goods-detail .goods-detail-vicetitle {
+  font-size: 24rpx;
+  color: #999999;
+  line-height: 32rpx;
+  float: left;
+}
+.goods .goods-detail .goods-detail-oldprice {
+  width: 180rpx;
+}

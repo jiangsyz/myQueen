@@ -1,0 +1,186 @@
+<style lang="less" src="../less/logistica.less"></style>
+<style lang="less">
+  
+</style>
+<template>
+  <view class="container" wx:if="{{isLoading}}">
+    <scroll-view scroll-x class="package">
+      <repeat for="{{logistic}}" item="item" index="index"><view class="{{current === index ? 'active' : ''}}" @tap="checkPackage({{index}})">{{item.name}}</view></repeat>
+    </scroll-view>
+    <view class="lg-container">
+      <repeat for="{{logistic}}" item="item" index="index">
+        <view wx:if="{{current === index}}">
+          <view class="lgtitle latest">
+            <text class="iconfont icon-me_dd"></text>
+            <view class="latest-detail">
+              <text class="tips">{{status[current][0].time}}</text>
+              <text class="font-normal">{{status[current][0].text}}</text>
+            </view>
+            <image src="../image/dz_bgbl.png" class="bottom-line"></image>
+          </view>
+          <view class="lgtitle">
+            <text class="font-normal left">物流单号：<text selectable="true">{{item.logisticsCode}}</text></text>
+            <text class="tips right">联系电话：{{item.phone}}</text>
+          </view>
+          <orderList :orderList.sync="item.orderDetail" :userLevel.sync="userLevel"></orderList>
+          <view class="lgtitle"><text class="font-normal">物流追踪</text></view>
+          <view class="lgdetail">
+            <view class="timeline"></view>
+            <repeat for="{{status[current]}}" index="index" item="item">
+              <view class="lgcontent">
+                <view class="left"><text class="tips">{{item.time[0]}}</text><text class="tips">{{item.time[1]}}</text></view>
+                  <view class="middle">
+                    <view class="status active" wx:if="{{index === 0}}">
+                      <text class="iconfont icon-fxkdui"></text>
+                    </view>
+                    <view class="status" wx:else>
+                      <text class="iconfont icon-topsj"></text>
+                    </view>
+                  </view>
+                  <view class="right">
+                    <text class="font-normal">{{item.text}}</text>
+                  </view>
+              </view>
+            </repeat>
+          </view>
+        </view>
+      </repeat>
+    </view>
+  </view>
+  <defect wx:if="{{isNull}}" type="9"></defect>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import OrderList from '../components/orderlist'
+  import Defect from '../components/defect'
+
+  export default class Logistica extends wepy.page {
+    config = {
+      navigationBarTitleText: '我的物流'
+    }
+    data = {
+      package: [],
+      current: 0,
+      orderId: '',
+      logistic: [],
+      status: [],
+      isLoading: false,
+      orderStatus: '',
+      isNull: false
+    }
+    components = {
+      orderList: OrderList,
+      defect: Defect
+    }
+    computed = {
+      userLevel () {
+        if (this.$parent.globalData.userLevel === 0) {
+          return false
+        } else if (this.$parent.globalData.userLevel === 1) {
+          return true
+        }
+      }
+    }
+    methods = {
+      checkPackage (index) {
+        this.current = index
+      }
+    }
+    initLogistic () {
+      this.logistic = []
+      this.$parent.showLoading()
+      this.token = this.$parent.getToken()
+      var _this = this
+      var data = {
+        token: this.token,
+        orderId: this.orderId
+      }
+      this.$parent.HttpRequest.GetLogistic(data).then((res) => {
+        console.log(res)
+        if (res.data.error === 0) {
+          var data = res.data.data
+          if (data.length === 0) {
+            this.isNull = true
+          }
+          data.forEach((item) => {
+            var obj = {}
+            obj.logisticsCode = item.logisticsCode.replace(/(^\s+)|(\s+$)/g, '')
+            console.log(item.logisticsCode)
+            obj.name = item.logistics.name
+            obj.phone = item.logistics.phone
+            obj.orderDetail = _this.initChild(item.buyingRecords)
+            _this.logistic.push(obj)
+            _this.getStatus(item.logistics.id, obj.logisticsCode)
+          })
+        } else {
+          if (_this.$parent.missToken) {
+            _this.initLogistic()
+          }
+        }
+        _this.$parent.hideLoading()
+        _this.$apply()
+      }).catch(() => {
+        _this.$parent.hideLoading()
+        // _this.$parent.showFail()
+      })
+    }
+    initChild (parent) {
+      var child = []
+      parent.forEach((item) => {
+        var obj = {}
+        obj.path = item.cover
+        obj.title = item.productName
+        obj.price = item.memberPrice
+        obj.oldprice = item.price
+        obj.id = item.productId
+        obj.sourceType = item.salesUnitType
+        obj.sourceId = item.salesUnitId
+        obj.detail = item.title + '×' + item.buyingCount
+        obj.count = item.buyingCount
+        obj.checked = false
+        obj.totalCount = item.keepCount
+        child.push(obj)
+      })
+      return child
+    }
+    getStatus (logisticsId, logisticsCode) {
+      this.status = []
+      this.token = this.$parent.getToken()
+      var _this = this
+      var data = {
+        token: this.token,
+        orderId: this.orderId,
+        logisticsId: logisticsId,
+        logisticsCode: logisticsCode
+      }
+      console.log(data)
+      this.$parent.HttpRequest.GetLogisticStatus(data).then((res) => {
+        console.log(res)
+        if (res.data.error === 0) {
+          _this.isLoading = true
+          var data = res.data.data
+          var statusTemp = []
+          data.forEach((item) => {
+            var obj = {}
+            obj.time = item.time.split(' ')
+            obj.text = item.context
+            statusTemp.push(obj)
+          })
+          _this.status.push(statusTemp)
+        } else {
+          _this.isNull = true
+        }
+        _this.$apply()
+      })
+    }
+    onLoad (id) {
+      this.orderId = id.id
+      this.orderStatus = id.status
+      this.$apply()
+    }
+    onShow () {
+      this.initLogistic()
+    }
+  }
+</script>

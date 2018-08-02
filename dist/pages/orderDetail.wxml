@@ -1,0 +1,94 @@
+
+  <view class="container">
+    <view  wx:if="{{!isNull}}">
+      <view class="orderStatus">
+        <text class="iconfont icon-bgicon"><text class="iconfont icon-more" wx:if="{{status !== 3}}"/></text>
+        <text class="font-normal {{status === 3 ? 'gray' : ''}} {{status === 1 || status === 2 ? 'link' : ''}}">{{status === 1 && !remainTime ? initTxt : statusTxt}}</text>
+        <text class="font-normal txt-status remain" wx:if="{{status === 1 && remainTime && !isStop}}">
+          <text class="font-normal">仅剩余：{{remainTime}}</text>
+          <text class="font-normal">待付款：￥{{pay}}</text>
+        </text>
+        <text class="font-normal txt-status" wx:elif="{{remainTime === 0 && status === 1 && isStop}}">支付超时</text>
+        <text class="font-normal txt-status" wx:elif="{{status === 2 && address != false}}">
+          售后中
+        </text>
+        <text class="font-normal txt-status" wx:elif="{{status === 3}}">
+          交易关闭
+        </text>
+      </view>
+      <view class="orderStatus address" wx:if="{{address && Object.keys(address).length !== 0}}">
+        <text class="iconfont icon-ksj_dz"/>
+        <text class="font-normal">{{address.name}}</text>
+        <text class="font-normal gray">{{address.phone}}</text>
+        <text class="font-normal block">{{address.detail}}</text>
+      </view>
+      <block wx:for="{{order}}" wx:for-index="index" wx:for-item="item" wx:key="key">
+        <view class="cart-list" wx:if="{{!item.isNull}}">
+          <view class="content order-title">
+            <text class="title"><text class="iconfont {{item.iconClass}}"/>{{item.title}}</text>
+          </view>
+          <view class="item-box">
+            <view class="items">
+              
+  <block wx:for="{{item.orderDetail}}" wx:for-index="$orderList$index" wx:for-item="$orderList$item" wx:key="$orderList$index">
+    <view class="item-list">
+      <view class="inner txt" bindtap="$orderList$goDetail" data-com-index="{{index}}" data-wpygodetail-a="{{$orderList$item.id}}" data-wpygodetail-b="{{$orderList$item.sourceType}}">
+        <view class="inner-layer" data-index="{{$orderList$index}}" id="{{$orderList$item.sourceId}}">
+          <text class="title">{{$orderList$item.title}}</text>
+          <view class="overflow">
+            <text class="font-small link"><text class="iconfont icon-new_vchao"/>￥{{$orderList$item.price}} </text>
+            <text class="font-small left {{userLevel ? '' : ''}}">原价：￥{{$orderList$item.oldprice}}</text>
+          </view>
+          <text class="tips">规格：{{$orderList$item.detail}}</text>
+        </view>
+        <view class="inner-image">
+          <image src="{{$orderList$item.path}}" mode="aspectFill"/>
+        </view>
+      </view>
+    </view>
+  </block>
+
+            </view>
+          </view>
+        </view>
+      </block>
+      <view class="orderInfo">
+        <text class="font-normal label">订单编号：</text>
+        <text class="font-normal right" selectable="true">{{orderId}}</text><text selectable="false"/>
+      </view>
+      <view class="orderInfo">
+        <text class="font-normal label">创建时间：</text>
+        <text class="font-normal right">{{createTime}}</text>
+      </view>
+      <view class="orderInfo">
+        <text class="font-normal label">备注：</text>
+        <text class="font-normal right">{{memo}}</text>
+      </view>
+      <view class="orderInfo spacing">
+        <text class="font-normal label">商品总额：</text>
+        <text class="font-normal right">￥{{pay}}</text>
+      </view>
+      <view class="orderTotal" wx:if="{{!isHidden}}">
+        <text class="iconfont icon-me_dd"/>
+        <view class="status-layer">
+          <text class="font-normal" wx:if="{{status === 1}}">待付款<text class="link">￥{{pay}}</text> (含运费￥{{freight}})</text>
+          <text class="font-normal" wx:elif="{{status === 2}}">售后中</text>
+          <text class="font-normal" wx:elif="{{status === 3}}">交易已关闭</text>
+          <text class="font-normal" wx:elif="{{status <= 0}}">交易异常</text>
+          <text class="font-normal" wx:elif="{{(status === 5 && isReceive) || status === 6}}">交易完成</text>
+          <text class="font-normal" wx:else>实付款<text class="link">￥{{pay}}</text> (含运费￥{{freight}})</text>
+          <view class="edit-button">
+            <button class="default-button" hover-class="default-button-hover" wx:if="{{status === 1}}" bindtap="goPay">付款</button>
+            <button class="blank-button" hover-class="blank-button-hover" wx:if="{{status === 1}}" bindtap="goAddress">修改地址</button>
+            <button class="blank-button" hover-class="blank-button-hover" wx:if="{{status === 1 || status === 4}}" bindtap="cancel">取消订单</button>
+            <view wx:if="{{address && Object.keys(address).length !== 0}}">
+              <button class="default-button" hover-class="default-button-hover" wx:if="{{status === 5 && !isReceive}}" bindtap="goReceive">确认收货</button>
+              <button class="blank-button" hover-class="blank-button-hover" wx:if="{{(status === 2 && deliverStatus >= 2) || status === 5 || status === 6}}" bindtap="goLogistic">查看物流</button>
+            </view>
+            <button class="blank-button" hover-class="blank-button-hover" open-type="contact" session-from="udesk|{{nick_name}}|{{avatar}}|customer^{{customer_info_str}}|note^{{note_info_str}}" wx:if="{{status === 5 || status === 6 || status <= 0}}">售后申请</button>
+          </view>
+        </view>
+      </view>
+      <view class="orderTotal" wx:else><text class="font-normal">订单已取消</text></view>
+    </view>
+  </view>

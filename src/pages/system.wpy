@@ -1,0 +1,137 @@
+<style lang="less" src="../less/system.less"></style>
+
+<template>
+  <view class="container">
+    <view class="notice-type">
+      <repeat for="{{noticeType}}" item="item" index="index"><view class="{{current === index ? 'active' : ''}}" @tap="changeType({{index}})">{{item}}</view></repeat>
+    </view>
+    <view>
+      <view wx:if="{{current === 0}}">
+        <repeat for="{{systemNotice}}" item="item" index="index">
+          <view class="notice">
+            <text class="iconfont icon-me_xx"></text>
+            <text class="font-normal">{{item.content}}<text class="tips">{{item.time}}</text></text>
+          </view>
+        </repeat>
+        <defect wx:if="{{systemIsNull}}" type="6"></defect>
+      </view>
+      <view wx:if="{{current === 1}}">
+        <repeat for="{{orderNotice}}" item="item" index="index">
+          <view class="notice">
+            <text class="iconfont icon-me_xx"></text>
+            <text class="font-normal">{{item.content}}<text class="tips">{{item.time}}</text></text>
+          </view>
+        </repeat>
+        <defect wx:if="{{orderIsNull}}" type="6"></defect>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import Defect from '../components/defect'
+
+  export default class System extends wepy.page {
+    config = {
+      navigationBarTitleText: '系统消息'
+    }
+    data = {
+      token: '',
+      pageSize: 5,
+      pageNum: 1,
+      totalPageNum: '',
+      noticeType: ['系统通知', '订单通知'],
+      noticeList: [],
+      current: 0,
+      systemNotice: null,
+      orderNotice: null
+    }
+    methods = {
+      changeType (index) {
+        this.current = index
+      }
+    }
+    components = {
+      defect: Defect
+    }
+    computed = {
+      systemIsNull () {
+        if (this.systemNotice && this.systemNotice.length === 0) {
+          return true
+        } else {
+          return false
+        }
+      },
+      orderIsNull () {
+        if (this.orderNotice && this.orderNotice.length === 0) {
+          return true
+        } else {
+          return false
+        }
+      }
+    }
+    initData () {
+      this.$parent.showLoading()
+      this.token = this.$parent.getToken()
+      var _this = this
+      var data = {
+        token: this.token,
+        pageSize: this.pageSize,
+        pageNum: this.pageNum
+      }
+      this.$parent.HttpRequest.GetNotice(data).then((res) => {
+        console.log(res)
+        _this.$parent.hideLoading()
+        if (res.data.error === 0) {
+          _this.systemNotice = []
+          _this.orderNotice = []
+          var data = res.data.data
+          _this.totalPageNum = data.totalPageNum
+          data.notice.forEach((item) => {
+            var obj = {}
+            obj.type = item.type
+            obj.content = item.content
+            obj.time = _this.$parent.dateFormat(item.createTime * 1000, 'Y-m-d H:m')
+            _this.noticeList.push(obj)
+          })
+          _this.orderNotice = _this.noticeList.filter((item) => {
+            return item.type === 1
+          })
+          _this.systemNotice = _this.noticeList.filter((item) => {
+            return item.type === 2
+          })
+        } else {
+          if (_this.$parent.missToken) {
+            _this.initData()
+          }
+        }
+        _this.$apply()
+      }).catch(() => {
+        _this.$parent.hideLoading()
+        // _this.$parent.showFail()
+      })
+    }
+    onReachBottom () {
+      // 显示加载状态
+      if (this.pageNum < this.totalPageNum) {
+        // 显示下一页数据
+        this.pageNum ++
+        this.initData()
+      } else {
+        if (this.collectList.length !== 0) {
+          this.isDown = true
+        }
+      }
+    }
+    onLoad () {
+      this.$apply()
+    }
+    onShow () {
+      this.current = 0
+      this.pageNum = 1
+      this.initData()
+      this.$apply()
+    }
+  }
+</script>

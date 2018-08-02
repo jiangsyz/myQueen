@@ -1,0 +1,67 @@
+/* -- base color -- */
+/* -- base fontSize -- */
+/* -- base lineHeight -- */
+/* -- Mixin -- */
+.goods {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  padding: 30rpx 0;
+  height: 200rpx;
+  border-bottom: 1px #eeeeee solid;
+}
+.goods:last-child {
+  border-bottom: none;
+}
+.goods.expire {
+  position: relative;
+}
+.goods.expire .expire-layer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 99;
+  line-height: 200rpx;
+  text-align: center;
+  font-size: 28rpx;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.2);
+}
+.goods.expire .goods-detail .goods-detail-title,
+.goods.expire .goods-detail .goods-detail-price {
+  color: #999999;
+}
+.goods .goods-image {
+  border: 1px #eeeeee solid;
+  height: 200rpx;
+  width: 200rpx;
+  overflow: hidden;
+  position: relative;
+}
+.goods .goods-image image {
+  height: 100%;
+  width: 200rpx;
+}
+.goods .goods-detail {
+  width: 65%;
+  padding-left: 5%;
+  color: #333333;
+}
+.goods .goods-detail .goods-detail-title {
+  font-size: 32rpx;
+  line-height: 40rpx;
+  min-height: 80rpx;
+  height: 80rpx;
+  overflow: hidden;
+}
+.goods .goods-detail .goods-detail-price {
+  font-size: 28rpx;
+}
+.goods .goods-detail .goods-detail-price .price {
+  color: #fc5e43;
+  font-weight: 500;
+}
+.goods .goods-detail .goods-detail-oldprice {
+  font-size: 24rpx;
+  color: #999999;
+}

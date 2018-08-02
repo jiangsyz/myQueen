@@ -1,0 +1,43 @@
+<style type="less" src="../less/goods.less"></style>
+
+<template>
+  <view class="goods-layer">
+    <repeat for="{{goodsItem}}" item="item">
+      <view class="goods {{item.noSales ? 'expire' : ''}}" @tap="tap({{item.id}}, {{item.noSales}})" id="{{item.id}}">
+        <view class="goods-image"><view class="expire-layer" wx:if="{{item.noSales}}">商品失效</view><image src="{{item.path}}" mode="aspectFit" lazy-load="true"></image></view>
+        <view class="goods-detail">
+          <view class="goods-detail-title">{{item.title}}</view>
+          <view class="goods-detail-price">
+            <text class="iconfont icon-new_vchao"></text><text>￥{{item.price}}</text><text class="price"> (优惠￥{{item.reduction}})</text>
+          </view>
+          <view class="overflow">
+          <view class="goods-detail-oldprice">原价:{{item.oldprice}}</view>
+          <view class="goods-detail-vicetitle">规格:{{item.detail}}</view>
+          </view>
+          <view class="goods-promot">
+            <view class="goods-info">
+              {{item.descript}}
+            </view>
+          </view>
+        </view>
+      </view>
+    </repeat>
+  </view>
+</template>
+<script>
+  import wepy from 'wepy'
+
+  export default class Goods extends wepy.component {
+    props = {
+      goodsItem: Array
+    }
+    methods = {
+      tap (id, type) {
+        this.$emit('goodsTap', id, type)
+      }
+    }
+    onLoad () {
+      this.$apply()
+    }
+  }
+</script>

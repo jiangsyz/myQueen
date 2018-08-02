@@ -1,0 +1,115 @@
+@import "variables.less";
+
+page{
+  background:@whitegray;
+}
+.overflow{
+  overflow: hidden;
+  clear:both;
+}
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+.content{
+  padding:20rpx;
+  background: @white;
+  margin-bottom:10px;
+  width:100%;
+  box-sizing:border-box;
+  &:last-child{
+    margin-bottom:0;
+  }
+}
+.default-button{
+  background: @lightred;
+  color: @white;
+  font-size:@baseSize;
+  line-height:@largeLine;
+  border-radius:0;
+  margin:0;
+}
+.default-button-hover{
+  background:@lightredHover;
+}
+.blank-button{
+  border:1px @lightred solid;
+  color:@lightred;
+  font-size:@baseSize;
+  line-height:@baseLine;
+  border-radius:0;
+  margin:0;
+  background:transparent;
+  padding:0 20rpx;
+}
+.blank-button-hover{
+  background:@lightredHover;
+  color:@white;
+}
+.line-button {
+  padding:0;
+  margin:0;
+  font-size:@baseSize;
+  line-height: @baseLine;
+  border-radius: 0;
+  border-bottom: 1px @lightred solid;
+  display: inline-block;
+  color:@lightred;
+  background: transparent;
+}
+.white-button{
+  border:1px @lightred solid;
+  background:@white;
+  color:@lightred;
+  font-size:@baseSize;
+  line-height:@largeLine;
+  border-radius:0;
+  margin:0;
+  padding:0 20rpx;
+}
+.size-full{
+  width: 100%;
+  line-height:116rpx;
+  font-size: 32rpx;
+}
+
+/* 预设字体定义 color/font-size/line-height */
+.title{
+  .baseFont(@dark, @largeSize, @baseLine)
+}
+.font-normal{
+  .baseFont(@dark, @baseSize, @baseLine)
+}
+.font-small{
+  .baseFont(@dark, @smallSize, @smallLine)
+}
+.section{
+  .baseFont(@dark, @baseSize, @baseLine)
+}
+.link{
+  color:@lightred !important;
+}
+.font-bold{
+  font-weight:700;
+}
+.tips{
+  font-size:@smallSize;
+  color:@darkgray;
+}
+.through{
+  text-decoration: line-through;
+}
+button::after{
+  border: none;
+}
+
+/*
+::-webkit-scrollbar{
+  width: 0;
+  height: 0;
+  color: transparent;
+}
+*/

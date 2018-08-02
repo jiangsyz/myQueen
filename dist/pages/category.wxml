@@ -1,0 +1,78 @@
+
+  <view class="container">
+    <view  wx:if="{{isLoading}}">
+      
+  <view class="searchbar" bindtap="$searchbar$goSearch">
+    <view class="searchinput">
+      <image src="../image/search.png"/>
+      <text>输入关键词搜索商品，如：西冷</text>
+    </view>
+  </view>
+
+      <view class="category-bg">
+        <block wx:for="{{categoryImg}}" wx:for-index="index" wx:for-item="item" wx:key="index">
+          <image src="{{item}}" class="{{index === currentTab ? 'active' : ''}}" style="z-index:{{index === currentTab ? '999' : index}}"/>
+        </block>
+      </view>
+      <scroll-view class="category-tab" scroll-x>
+        <block wx:for="{{categoryTab}}" wx:for-index="index" wx:for-item="item" wx:key="index">
+          <view class="category-tab-list {{currentTab === index ? 'active' : ''}}" bindtap="changeTab" data-wpychangetab-a="{{index}}" data-wpychangetab-b="{{item.id}}">
+            <view class="category-tab-title">{{item.title}}</view>
+          </view>
+        </block>
+      </scroll-view>
+      <view class="category-tab-item">
+        <block wx:for="{{categoryTab}}" wx:for-index="index" wx:for-item="item" wx:key="index">
+          <scroll-view class="category-tab-page {{showMore === index ? 'more' : ''}}" wx:if="{{currentTab === index}}" scroll-x>
+            <block wx:for="{{item.child}}" wx:for-index="index" wx:for-item="item" wx:key="index">
+              <view class="catrgory-tab-link {{currentItem === index ? 'current' : ''}}" id="{{item.id}}" bindtap="reqCategory" data-wpyreqcategory-a="{{index}}" data-wpyreqcategory-b="{{item.id}}"><text>{{item.name}}</text></view>
+            </block>
+          </scroll-view>
+        </block>
+      </view>
+      <view class="content" wx:if="{{!isNull}}">
+        
+  <view class="goods-layer">
+    <block wx:for="{{$Categoods$goodsItem}}" wx:for-index="$Categoods$index" wx:for-item="$Categoods$item" wx:key="$Categoods$key">
+      <view class="goods {{$Categoods$item.noSales ? 'expire' : ''}}" bindtap="$Categoods$tap" id="{{$Categoods$item.id}}" data-wpytap-a="{{$Categoods$item.id}}" data-wpytap-b="{{$Categoods$item.noSales}}">
+        <view class="goods-image"><view class="expire-layer"  wx:if="{{$Categoods$item.noSales}}">商品失效</view><image src="{{$Categoods$item.path}}" mode="aspectFit" lazy-load="true"/></view>
+        <view class="goods-detail">
+          <view class="goods-detail-title">{{$Categoods$item.title}}</view>
+          <view class="goods-detail-price">
+            <text class="iconfont icon-new_vchao"/><text>￥{{$Categoods$item.price}}</text><text class="price"> (优惠￥{{$Categoods$item.reduction}})</text>
+          </view>
+          <view class="overflow">
+          <view class="goods-detail-oldprice">原价:{{$Categoods$item.oldprice}}</view>
+          <view class="goods-detail-vicetitle">规格:{{$Categoods$item.detail}}</view>
+          </view>
+          <view class="goods-promot">
+            <view class="goods-info">
+              {{$Categoods$item.descript}}
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+      </view>
+      <view class="defect" wx:else>
+        
+  <view>
+    <view class="lost-goods">
+      <image src="../image/lost-goods.png"/>
+      <text class="iconfont {{$defectImage$typeIcon}}"/>
+      <text class="font-normal">{{$defectImage$typeTxt}}</text>
+    </view>
+  </view>
+
+      </view>
+      
+  <view wx:if="{{isDown}}">
+    <view class="isDown">
+      <text>————————— 已加载完毕 —————————</text>
+    </view>
+  </view>
+
+    </view>
+  </view>

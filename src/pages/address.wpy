@@ -1,0 +1,205 @@
+<style lang="less" src="../less/address.less"></style>
+
+<template>
+  <view class="container">
+    {{detail}}
+    <repeat for="{{address}}" item="item" index="index" key="index">
+      <view class="address-container">
+        <view class="address-layer" @tap="backToOrder({{index}}, {{item.id}})">
+          <text class="title">{{item.name}}</text>
+          <text class="phonenumer">{{item.phone}}</text>
+          <text class="address-detail tips">{{item.add}}</text>
+          <text class="address-detail tips" wx:if="{{item.postCode}}">邮编：{{item.postCode}}</text>
+        </view>
+        <view class="address-edit">
+          <text class="iconfont icon-me_dz"></text>
+          <view class="delete-layer" @tap="deleteAdd({{item.id}})">
+            <text class="iconfont icon-dz_sc"></text>
+            <text class="font-normal">删除</text>
+          </view>
+          <view class="edit-layer" @tap="editAdd({{item}})">
+            <text class="iconfont icon-dz_bj"></text>
+            <text class="font-normal">编辑</text>
+          </view>
+        </view>
+      </view>
+    </repeat>
+    <defect wx:if="{{isNull}}" type="5"></defect>
+    <button class="default-button" @tap="goNewAdd">新建地址</button>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import Defect from '../components/defect'
+
+  export default class Address extends wepy.page {
+    config = {
+      navigationBarTitleText: '收货地址'
+    }
+    data = {
+      token: '',
+      address: [],
+      isNull: false,
+      prevPage: '',
+      sourceType: '',
+      sourceId: '',
+      count: '',
+      orderId: '',
+      detail: '',
+      getTokenTime: 0,
+      memo: ''
+    }
+    components = {
+      defect: Defect
+    }
+    methods = {
+      editAdd (param) {
+        wepy.navigateTo({
+          url: './editAdd?detail=' + JSON.stringify(param)
+        })
+      },
+      goNewAdd () {
+        wepy.navigateTo({
+          url: './newAdd'
+        })
+      },
+      deleteAdd (id) {
+        var _this = this
+        wepy.showModal({
+          title: '提示',
+          content: '是否删除',
+          success: (res) => {
+            if (res.confirm) {
+              _this.deleteAdd(id)
+            }
+          }
+        })
+      },
+      backToOrder (index, id) {
+        // var page = this.getCurrentPages()
+        // var pre = page[page.length - 2].route
+        if (this.prevPage === 'paycart') {
+          wepy.redirectTo({
+            url: './paycart?user=' + JSON.stringify(this.address[index]) + '&memo=' + this.memo
+          })
+        }
+        if (this.prevPage === 'paybuy') {
+          wepy.redirectTo({
+            url: './paybuy?user=' + JSON.stringify(this.address[index]) + '&type=' + this.sourceType + '&id=' + this.sourceId + '&count=' + this.count + '&memo=' + this.memo
+          })
+        }
+        if (this.prevPage === 'order') {
+          this.editOrderAdd(id, () => {
+            wepy.redirectTo({
+              url: './order'
+            })
+          })
+        }
+        if (this.prevPage === 'orderdetail') {
+          this.editOrderAdd(id, () => {
+            wepy.redirectTo({
+              url: './orderDetail?id=' + this.orderId
+            })
+          })
+        }
+      }
+    }
+    initAdd () {
+      this.token = this.$parent.getToken()
+      this.$parent.showLoading()
+      var _this = this
+      var data = {
+        token: this.token
+      }
+      this.address = []
+      this.$parent.HttpRequest.GetAddress(data).then((res) => {
+        console.log(res)
+        _this.$parent.hideLoading()
+        if (res.data.error === 0) {
+          var data = res.data.data
+          if (data.length === 0) {
+            _this.isNull = true
+          } else {
+            _this.isNull = false
+          }
+          data.forEach((item) => {
+            var obj = {}
+            obj.name = item.name
+            obj.phone = item.phone
+            obj.add = item.areaFullName + item.address
+            obj.detail = item.address
+            obj.id = item.id
+            obj.areaId = item.areaId
+            obj.postCode = item.postCode
+            obj.areaFullName = item.areaFullName
+            obj.areaFullId = item.areaFullId
+            _this.address.push(obj)
+            _this.address.sort((add1, add2) => {
+              return add2.id - add1.id
+            })
+          })
+        } else {
+          _this.isNull = true
+          if (_this.$parent.missToken) {
+            _this.initAdd()
+          }
+        }
+        _this.$apply()
+      }).catch(() => {
+        _this.$parent.hideLoading()
+        _this.isNull = true
+        // _this.$parent.showFail()
+      })
+    }
+    deleteAdd (id) {
+      this.token = this.$parent.getToken()
+      var _this = this
+      var data = {
+        token: this.token,
+        addressId: id
+      }
+      this.$parent.HttpRequest.DeleteAddress(data).then((res) => {
+        if (res.data.error === 0) {
+          _this.initAdd()
+        } else {
+          if (_this.$parent.missToken) {
+            // _this.token = this.$parent.getToken(res.data.error)
+          }
+        }
+        _this.$apply()
+      })
+    }
+    editOrderAdd (id, cb) {
+      this.token = this.$parent.getToken()
+      var _this = this
+      var data = {
+        token: this.token,
+        orderId: this.orderId,
+        addressId: id
+      }
+      this.$parent.HttpRequest.EditOrderAdd(data).then((res) => {
+        console.log(res)
+        if (res.data.error === 0) {
+          cb && cb()
+        } else {
+          if (_this.$parent.missToken) {
+            // _this.token = this.$parent.getToken(res.data.error)
+          }
+        }
+      })
+    }
+    onLoad (data) {
+      this.prevPage = data.page
+      this.sourceType = data.sourceType
+      this.sourceId = data.sourceId
+      this.count = data.count
+      this.orderId = data.id
+      this.memo = data.memo
+      this.$apply()
+    }
+    onShow () {
+      this.initAdd()
+    }
+  }
+</script>

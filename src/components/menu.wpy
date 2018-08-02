@@ -1,0 +1,56 @@
+<style lang="less" src="../less/menu.less"></style>
+
+<template>
+  <view class="menu-layer {{fullMenu ? 'active' : ''}}">
+    <view @tap.stop="showMenu" class="menu-button"><text class="tips">快捷导航</text></view>
+    <view class="menu-content">
+      <view @tap="goIndex"><image src="../image/index-default.png"></image></view>
+      <view @tap="goCategory"><image src="../image/category-default.png"></image></view>
+      <view @tap="goCate"><image src="../image/cart-default.png"></image></view>
+      <view @tap="goUser"><image src="../image/user-default.png"></image></view>
+    </view>
+  </view>
+</template>
+<script>
+  import wepy from 'wepy'
+  
+  export default class Search extends wepy.component {
+    props = {
+    }
+    data = {
+      fullMenu: false
+    }
+    methods = {
+      showMenu () {
+        this.fullMenu = !this.fullMenu
+      },
+      goIndex () {
+        this.$parent.pageRoot = false
+        wepy.switchTab({
+          url: './index'
+        })
+      },
+      goCategory () {
+        this.$parent.pageRoot = false
+        wepy.switchTab({
+          url: './category'
+        })
+      },
+      goCate () {
+        this.$parent.pageRoot = false
+        wepy.switchTab({
+          url: './cart'
+        })
+      },
+      goUser () {
+        this.$parent.pageRoot = false
+        wepy.switchTab({
+          url: './user'
+        })
+      }
+    }
+    onLoad () {
+      this.$apply()
+    }
+  }
+</script>

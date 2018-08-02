@@ -1,0 +1,57 @@
+
+  <view class="container">
+    <view class="search-layer">
+      <view class="search-input">
+        <image src="../image/search.png"/>
+        <form bindreset="clearInput">
+        <input type="text" placeholder="输入关键词搜索商品，如：西冷" placeholder-class="placeholder" value="{{keywords}}" bindinput="keySearch"/>
+        <button class="clear-btn" form-type="reset"><text class="iconfont icon-kf_qxbtn"/></button>
+        </form>
+      </view>
+      <view class="search-button">
+        <view class="search-cancel {{isSearch ? 'search-confirm' : ''}}" bindtap="doSearch"><text>{{isSearch ? '搜索' : '取消'}}</text></view>
+      </view>
+    </view>
+    <view class="content"  wx:if="{{isNull}}">
+      
+  <view class="goods-layer">
+    <block wx:for="{{$searchResult$goodsItem}}" wx:for-index="$searchResult$index" wx:for-item="$searchResult$item" wx:key="$searchResult$key">
+      <view class="goods {{$searchResult$item.noSales ? 'expire' : ''}}" bindtap="$searchResult$tap" id="{{$searchResult$item.id}}" data-wpytap-a="{{$searchResult$item.id}}" data-wpytap-b="{{$searchResult$item.noSales}}">
+        <view class="goods-image"><view class="expire-layer"  wx:if="{{$searchResult$item.noSales}}">商品失效</view><image src="{{$searchResult$item.path}}" mode="aspectFit" lazy-load="true"/></view>
+        <view class="goods-detail">
+          <view class="goods-detail-title">{{$searchResult$item.title}}</view>
+          <view class="goods-detail-price">
+            <text class="iconfont icon-new_vchao"/><text>￥{{$searchResult$item.price}}</text><text class="price"> (优惠￥{{$searchResult$item.reduction}})</text>
+          </view>
+          <view class="overflow">
+          <view class="goods-detail-oldprice">原价:{{$searchResult$item.oldprice}}</view>
+          <view class="goods-detail-vicetitle">规格:{{$searchResult$item.detail}}</view>
+          </view>
+          <view class="goods-promot">
+            <view class="goods-info">
+              {{$searchResult$item.descript}}
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+    </view>
+    
+  <view wx:else>
+    <view class="lost-goods">
+      <image src="../image/lost-goods.png"/>
+      <text class="iconfont {{$defect$typeIcon}}"/>
+      <text class="font-normal">{{$defect$typeTxt}}</text>
+    </view>
+  </view>
+
+    
+  <view wx:if="{{isDown}}">
+    <view class="isDown">
+      <text>————————— 已加载完毕 —————————</text>
+    </view>
+  </view>
+
+  </view>

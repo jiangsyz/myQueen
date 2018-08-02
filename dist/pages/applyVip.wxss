@@ -1,0 +1,178 @@
+/* -- base color -- */
+/* -- base fontSize -- */
+/* -- base lineHeight -- */
+/* -- Mixin -- */
+.main {
+  overflow: hidden;
+  padding-bottom: 100rpx;
+}
+.main.vipMain {
+  padding-bottom: 0;
+}
+image {
+  width: 100%;
+  float: left;
+}
+.default-button {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  line-height: 100rpx;
+}
+.popup {
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 99;
+}
+.popup.active {
+  bottom: 0;
+}
+.popup-content {
+  width: 600rpx;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  -webkit-transform: translate(-50%, -50%);
+  opacity: 0;
+  background: #ffffff;
+  transition: 0.5s all ease-in;
+  z-index: -1;
+}
+.popup-content.show {
+  opacity: 1;
+  z-index: 999;
+}
+.popup-content .popup-title {
+  padding: 20rpx;
+  border-bottom: 1px #eeeeee solid;
+}
+.popup-content .popup-detail {
+  padding: 20rpx 20rpx 0;
+}
+.popup-content .popup-detail .popup-type {
+  border: 1px #eeeeee solid;
+  padding: 20rpx;
+}
+.popup-content .popup-detail .popup-type .font-normal {
+  width: 50%;
+  display: inline-block;
+}
+.popup-content .popup-detail .popup-type .link {
+  text-align: right;
+}
+.popup-content .popup-detail .popup-type.light {
+  border: 1px #fca743 solid;
+  box-shadow: 0 0 10rpx #ffc98a;
+}
+.popup-content .popup-detail .checkbox {
+  text-align: center;
+  margin: 10rpx 0 30rpx;
+}
+.popup-content .popup-detail .checkbox .rules {
+  display: inline-block;
+  margin-left: 10rpx;
+}
+.popup-content .popup-detail .checkbox .link {
+  text-decoration: underline;
+}
+.popup-content .button-layer {
+  padding: 20rpx 0 26rpx;
+  border-top: 1px #eeeeee solid;
+}
+.popup-content .button-layer .cancel {
+  color: #999999;
+  border-right: 1px #eeeeee solid;
+}
+.popup-content .button-layer .font-normal {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 50%;
+  text-align: center;
+}
+.vip-bg {
+  background: #202020;
+  position: relative;
+  overflow: hidden;
+}
+.vip-bg image {
+  position: absolute;
+  left: 20rpx;
+  top: 20rpx;
+  width: 710rpx;
+  height: 364rpx;
+}
+.vip-bg .vip-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 80rpx;
+  width: 160rpx;
+}
+.vip-bg .vip-title .icon-vip {
+  color: #fdd798;
+  font-size: 120rpx;
+}
+.vip-bg .vip-title image {
+  width: 160rpx;
+  height: 120rpx;
+}
+.vip-bg .vip-detail {
+  position: absolute;
+  bottom: 160rpx;
+  left: 20rpx;
+  width: 710rpx;
+}
+.vip-bg .vip-detail .title {
+  display: block;
+  width: 100%;
+  color: #a1a1a1;
+  padding: 0 20rpx;
+  box-sizing: border-box;
+  text-align: center;
+}
+.vip-bg .vip-button-layer {
+  position: absolute;
+  top: 364rpx;
+  left: 20rpx;
+  width: 710rpx;
+  background: #3c3c3c;
+  overflow: hidden;
+  height: 70rpx;
+  padding: 20rpx 0;
+}
+.vip-bg .vip-button-layer .vip-button-container {
+  width: 50%;
+  padding: 0 10rpx 0 20rpx;
+  box-sizing: border-box;
+  display: inline-block;
+}
+.vip-bg .vip-button-layer .vip-button-container:last-child {
+  padding: 0 20rpx 0 10rpx;
+}
+.vip-bg .vip-button-layer .vip-button-container button {
+  width: 100%;
+  text-align: center;
+  line-height: 70rpx;
+  border-radius: 0;
+  color: #ffffff;
+  padding: 0;
+  font-size: 28rpx;
+}
+.vip-pay {
+  background: #ec3d3a;
+}
+.vip-pay-hover {
+  background: #ff2400;
+}
+.vip-refund {
+  background: #303030;
+}
+.vip-refund-hover {
+  background: #333333;
+}

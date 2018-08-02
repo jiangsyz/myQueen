@@ -1,0 +1,720 @@
+<style lang="less" src="../less/detail.less"></style>
+<template>
+  <menuList></menuList>
+  <view class="container" style="height: {{overflow? winHeight : 'auto'}}" wx:if="{{isLoaded}}">
+    <view class="detail-info">
+      <view class="detail-img">
+        <swiper current="{{swiperOpt.currentTab}}" indicator-dots="{{swiperOpt.indicatorDots}}" indicator-color="{{swiperOpt.indicatorColor}}" indicator-active-color="{{swiperOpt.indicatorActive}}" autoplay="{{swiperOpt.autoplay}}" interval="{{swiperOpt.interval}}" duration="{{swiperOpt.duration}}" @change.stop="changeSwiper" @animationfinish="swiperEnd" class="index-swiper">
+          <swiper-item wx:if="{{hasVideo}}">
+            <view class="video-layer {{showVideo ? '' : 'hidden'}}">
+              <view @tap="playVideo">
+              <image src="{{videoSrc[0].src}}" mode="aspectFill"></image>
+              </view>
+            </view>
+            <view class="video-layer {{showVideo ? 'hidden': ''}}"><video id="myVideo" src="{{videoSrc[0].video}}" controls id="video" @pause="stopVideo" @ended="stopVideo" @error="errorVideo"></video></view>
+          </swiper-item>
+           <swiper-item>
+            <image src="{{detail.path}}" mode="aspectFill"></image>
+          </swiper-item>
+      </swiper>
+      </view>
+      <view class="detail-dots">
+        <view class="detail-dots-gray"></view>
+        <view class="detail-solid"></view>
+        <view class="detail-dots-orange"></view>
+      </view>
+      <view class="detail-txt">
+        <view class="detail-txt-layer">
+          <view class="detail-txt-content">
+            <text>会员价</text>
+            <text>￥{{detail.price}}</text>
+            <text class="express-txt">全场包邮</text>
+          </view>
+        </view>
+        <view class="detail-txt-price">
+          <view>
+            <text>原价</text>
+          </view>
+          <view>
+            <text class="{{userLevel === 0 ? '' : 'through'}}">￥{{detail.oldprice}}</text>
+          </view>
+          <text class="express-txt">运费<text class="freight" class="{{userLevel === 0 ? '' : 'through'}}">￥{{detail.express}}</text></text>
+          <view class="vip-tips" wx:if="{{userLevel === 1}}">
+            <text class="tips link">已为您节省</text><text class="tips link">￥{{detail.reduction}}</text>
+          </view>
+          <navigator url="./applyVip" class="detail-link" wx:if="{{userLevel === 0}}">点击成为会员</navigator>
+        </view>
+        <view class="express">
+        <button class="line-button" @tap="goRules">配送规则</button>
+        </view>
+        <!-- <view class="detail-txt-price express">
+          <text>快递<text wx:if="{{userLevel === 0}}" class="freight">￥{{detail.express}}</text></text>
+          <text class="tips" wx:if="{{userLevel === 0}}">成为会员<text class="tips">可享包邮</text></text>
+          <text class="tips" wx:elif="{{userLevel === 1}}">超级会员<text class="tips">已享包邮</text></text>
+          
+        </view> -->
+      </view>
+    </view>    
+    <view style="width:750rpx">
+      <view class="content collcet-layer">
+        <view class="detail-title">
+          <view class="font-normal">{{detail.title}}{{detail.viceTitle}}</view>
+          <view class="goods-promot">
+            <view class="goods-info">
+              {{detail.descript}}
+            </view>
+          </view>
+        </view>
+        <view class="detail-collect">
+          <view class="detail-collect-icon {{collect? 'collected' : ''}}" @tap="collectTap">
+            <image src="{{collect ? '../image/icon-cart.png' : '../image/icon-cart-blank.png'}}"></image>
+            <text class="collect-txt">{{collectTxt}}</text>
+          </view>
+          <view class="detail-collect-user">
+            <view class="detail-collect-detail">
+              <text class="section">已有{{collectednum}}人收藏了本商品</text>
+            </view>
+            <view @tap="collectTap">
+              <view class="detail-collect-list"  wx:if="{{collect}}">
+                <text class="iconfont icon-leftsj collect"></text><text class="un-collect collect">收藏成功</text>
+              </view>
+              <view class="detail-collect-list" wx:else>
+                <text class="iconfont icon-leftsj"></text><text class="un-collect">请点击收藏</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <recGoods :recommendList.sync="recgoodList" :userLevel.sync="userLevel" @goodsTap.user="goDetail"></recGoods>
+      <view class="content">
+        <view class="detail-title">
+          <text class="title">商品详情</text>
+        </view>
+        <view class="detail-container">
+          <view class="section">关于商品</view>
+          <repeat for="{{detail.imageSrc}}" item="item" index="index">
+            <image src="{{item.src}}" mode="widthFix" class="detail-image" @tap="goImageLink({{item.href}})"></image>
+          </repeat>
+        </view>
+      </view>
+    </view>
+    <bottom @buy.user="cart" @cart.user="cart" :cartVal.sync="addCartCount" :messagePath.sync="currentPath" :nick_name.sync="userName" :avatar.sync="userAvatar" :customer_info_str.sync="customer_info" :note_info_str.sync="bussiness_info" :isAllowSale.sync="isAllowSale"></bottom>
+    <view class="popup" wx:if="{{overflow}}"></view>
+    <view class="popup__content {{overflow && cartModal? 'active' : ''}}">
+      <view class="popup_close"><text class="title" @tap.stop="closeCart">关闭</text></view>
+      <view class="popup_layer">
+        <view class="popup_image">
+          <image src="{{detail.path}}" mode="widthFix"></image>
+        </view>
+        <view class="popup_goods">
+          <view class="popup_goods_box">
+            <view class="popup_goods_left">
+              <text class="title">已选：</text>
+            </view>
+            <view class="popup_goods_right">
+              <text class="title">{{cartResult.name}} × {{cartNum}}</text>
+            </view>
+          </view>
+          <text class="title link">价格：￥{{totalCart}}</text>
+          <counterCart @plusEdit.user="plusCart" @minusEdit.user="minusCart" @keyEdit.user="keyCart" class="calculate" :num.sync="cartNum" @blurEdit.user="blurCart" :isDisabled.sync="noSales"></counterCart>
+          <text wx:if="{{maxtip}}" class="tips link inline"><text>数量已达上限</text><text wx:if="{{cartResult.cartCount > 0 && isAddCart}}">(购物车已含{{cartResult.cartCount}})</text></text>
+        </view>
+      </view>
+      <scroll-view scroll-y="true" style="height: {{skuHeight}}rpx; min-height: 100rpx">
+        <radio-group @change="addCartGoods">
+          <repeat for="{{detail.goodList}}" item="item" index="index">
+            <view class="popup_layer">
+              <view class="goods-name {{item.num === 0 ? 'none' : ''}}">{{item.name}}</view>
+              <view class="goods-num {{item.num === 0 ? 'none' : ''}}">库存{{item.num === 0 || !item.isAllowSale? '不足' : item.num}}<radio value="{{index}}" color="{{item.num === 0? '#ccc' : '#ec3d3a'}}" checked="{{item.isChecked}}" disabled="{{item.num === 0 || !item.isAllowSale? true : false}}"></radio></view>
+            </view>
+          </repeat>
+        </radio-group>
+      </scroll-view>
+      <button class="default-button size-full {{cartResult.num - cartResult.cartCount <= 0 || !buttonDisable ? 'disable' : ''}}" @tap.stop="goCart" wx:if="{{isAddCart}}">加入购物车</button>
+      <button class="default-button size-full {{!buttonDisable ? 'disable' : ''}}" @tap.stop="goCart" wx:else>立即购买</button>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import Bottom from '../components/bottombar'
+  import Count from '../components/counter'
+  import Menu from '../components/menu'
+  import RecGoods from '../components/recommend'
+
+  export default class Detail extends wepy.page {
+    config = {
+      navigationBarTitleText: '商品详情'
+    }
+    components = {
+      bottom: Bottom,
+      counterBuy: Count,
+      counterCart: Count,
+      menuList: Menu,
+      recGoods: RecGoods
+    }
+    computed = {
+      totalCart () {
+        if (this.cartResult && Object.keys(this.cartResult).length > 0) {
+          var price = this.cartResult.price.replace(/,/g, '') * this.cartNum
+          return price.toFixed(2)
+        }
+      },
+      maxtip () {
+        if (!this.buttonDisable) {
+          return false
+        } else {
+          if (this.isAddCart) {
+            if (this.cartNum >= this.cartResult.num - this.cartResult.cartCount) {
+              return true
+            } else {
+              return false
+            }
+          } else {
+            if (this.cartNum >= this.cartResult.num) {
+              return true
+            } else {
+              return false
+            }
+          }
+        }
+      },
+      noSales () {
+        if (this.cartResult.num > 0) {
+          return false
+        } else {
+          return true
+        }
+      }
+    }
+    data = {
+      detail: {
+        path: '',
+        price: '',
+        oldprice: '',
+        express: '38.0',
+        title: '',
+        goodList: [],
+        imageSrc: []
+      },
+      swiperOpt: {
+        autoplay: false,
+        interval: 3000,
+        duration: 500,
+        currentTab: 0,
+        indicatorDots: false,
+        indicatorColor: '#cccccc',
+        indicatorActive: '#fc5e60'
+      },
+      token: '',
+      pageId: '',
+      collect: false,
+      overflow: false,
+      winHeight: 0,
+      collectTxt: '未收藏',
+      collectednum: ' ',
+      isAddCart: true,
+      cartNum: 1,
+      addCartCount: 0,
+      cartResult: [],
+      totalCart: 0,
+      cartModal: false,
+      collectImage: '../image/icon-cart-blank.png',
+      markId: '',
+      userLevel: 0,
+      isLoaded: false,
+      videoContext: '',
+      showVideo: true,
+      swiperStop: true,
+      refrenceCode: '',
+      memberId: '',
+      currentPath: '',
+      userName: '',
+      userAvatar: '',
+      customer_info: {
+        'description': '',
+        'level': '',
+        'cellphones': [['', '']]
+      },
+      bussiness_info: {
+        'title': ''
+      },
+      skuHeight: '',
+      videoSrc: [],
+      hasVideo: false,
+      recgoodList: [],
+      buttonDisable: true,
+      isAllowSale: true
+    }
+    methods = {
+      goDetail (id) {
+        wepy.navigateTo({
+          url: './detail?id=' + id
+        })
+      },
+      collectTap () {
+        if (!this.collect) {
+          this.setMark(() => {
+            this.collectTxt = '已收藏'
+            this.collect = true
+          })
+        } else {
+          this.CancelMark(() => {
+            this.collectTxt = '未收藏'
+            this.collect = false
+          })
+        }
+      },
+      cart (action) {
+        this.initData(() => {
+          if (action === 'addCart') {
+            this.isAddCart = true
+          } else if (action === 'addBuy') {
+            this.isAddCart = false
+          }
+          this.overflow = true
+          this.cartModal = true
+          this.showVideo = true
+          this.videoContext.pause()
+          this.initCartResult()
+        })
+      },
+      closeCart () {
+        this.overflow = false
+        this.cartModal = false
+        this.cartNum = this.cartResult.num <= 0 ? 0 : 1
+      },
+      plusCart () {
+        if (this.buttonDisable) {
+          if (this.isAddCart) {
+            if (this.cartResult.num - this.cartResult.cartCount > 0) {
+              this.cartNum ++
+              if (this.cartNum > this.cartResult.num - this.cartResult.cartCount) {
+                this.cartNum = this.cartResult.num - this.cartResult.cartCount
+              }
+            }
+          } else {
+            this.cartNum ++
+            if (this.cartNum > this.cartResult.num) {
+              this.cartNum = this.cartResult.num
+            }
+          }
+        }
+      },
+      minusCart () {
+        if (this.buttonDisable) {
+          if (this.cartResult.num > 0) {
+            this.cartNum --
+            if (this.cartNum <= 0) {
+              this.cartNum = 1
+            }
+          }
+        }
+        // 发送购物车减少数量
+      },
+      keyCart (val) {
+        this.cartNum = val
+        return this.cartNum
+      },
+      blurCart (val) {
+        if (val <= 0 || !this.buttonDisable) {
+          this.cartNum = 1
+        } else if (this.isAddCart && this.cartResult.num > 0 && this.cartNum > this.cartResult.num - this.cartResult.cartCount) {
+          this.cartNum = 1
+        } else if (!this.isAddCart && this.cartResult.num > 0 && this.cartNum > this.cartResult.num) {
+          this.cartNum = this.cartResult.num
+        } else if (this.cartResult.num <= 0) {
+          this.cartNum = 0
+        } else {
+          this.cartNum = val
+        }
+        return this.cartNum
+      },
+      addCartGoods (e) {
+        // 发送选中结果
+        this.cartNum = this.cartResult.num <= 0 ? 0 : 1
+        this.cartResult = this.detail.goodList[e.detail.value]
+      },
+      goCart () {
+        if (this.buttonDisable) {
+          if (this.isAddCart) {
+            if (this.cartResult.num - this.cartResult.cartCount > 0) {
+              this.overflow = false
+              this.cartModal = false
+              if (this.cartNum <= this.cartResult.num - this.cartResult.cartCount) {
+                this.addCartCount += parseInt(this.cartNum)
+                // 发送添加购物车请求
+                this.addCartData(() => {
+                  this.cartNum = this.cartResult.num <= 0 ? 0 : 1
+                })
+              }
+            }
+          } else {
+            this.$parent.pageRoot = false
+            wepy.navigateTo({
+              url: './paybuy?id=' + this.cartResult.id + '&type=' + this.cartResult.type + '&count=' + this.cartNum
+            })
+            this.methods.closeCart.apply(this)
+          }
+        }
+      },
+      goRules () {
+        this.$parent.pageRoot = false
+        wepy.navigateTo({
+          url: './rules'
+        })
+      },
+      playVideo () {
+        if (this.swiperStop) {
+          this.showVideo = false
+          this.videoContext.play()
+        }
+      },
+      stopVideo () {
+        this.showVideo = true
+        this.videoContext.pause()
+      },
+      changeSwiper () {
+        this.swiperStop = false
+        this.showVideo = true
+        this.videoContext.pause()
+        this.videoContext.seek(0)
+      },
+      swiperEnd () {
+        this.swiperStop = true
+      },
+      errorVideo () {
+        wepy.showModal({
+          title: '提示',
+          content: '播放失败，请稍候重试',
+          showCancel: false,
+          success: (res) => {
+            this.showVideo = true
+          }
+        })
+      },
+      goImageLink (href) {
+        if (href) {
+          wepy.navigateTo({
+            url: './link?href=' + href
+          })
+        }
+      }
+    }
+    initCartData () {
+      // 往后台发请求清空购物车选项
+    }
+    initCartResult () {
+      this.cartResult = []
+      let result = this.detail.goodList.filter((item) => {
+        return item.checked && item.isAllowSale
+      })
+      this.cartResult = result.length > 0 ? result[0] : this.detail.goodList[0]
+      for (var i = 0; i < this.detail.goodList.length; i++) {
+        if (this.cartResult.id === this.detail.goodList[i].id) {
+          this.detail.goodList[i].isChecked = true
+        } else {
+          this.detail.goodList[i].isChecked = false
+        }
+      }
+      this.cartNum = 1
+    }
+    initData (cb) {
+      this.token = this.$parent.getToken(0, this.refrenceCode)
+      console.log(this.token)
+      this.$parent.showLoading()
+      var _this = this
+      var data = {
+        token: this.token,
+        spuId: this.pageId
+      }
+      this.$parent.HttpRequest.DetailHttp(data).then((res) => {
+        _this.$parent.hideLoading()
+        console.log(res)
+        this.detail.goodList = []
+        if (res.data.error === 0) {
+          _this.isLoaded = true
+          var data = res.data.data
+          if (!data.collectionId) {
+            _this.collect = false
+          } else {
+            _this.collect = true
+          }
+          if (!res.data.data.isAllowSale) {
+            this.isAllowSale = false
+          } else {
+            this.isAllowSale = true
+          }
+          // 测试用户身份变化
+          _this.$parent.resetUserLevel(data.memberHash, this.token, () => {
+            _this.userLevel = _this.$parent.globalData.userLevel
+            _this.memberId = _this.$parent.globalData.memberId
+          })
+          _this.detail.path = data.cover
+          _this.detail.title = data.title
+          _this.detail.viceTitle = data.viceTitle
+          _this.currentPath = data.title
+          _this.detail.price = data.memberPrice
+          _this.detail.oldprice = data.price
+          _this.detail.reduction = data.reduction
+          _this.detail.descript = data.desc
+          _this.detail.type = data.sourceType
+          _this.detail.id = data.sourceId
+          _this.detail.collectId = data.collectionId
+          var tempSrc = JSON.parse(_this.$parent.base64Decode(data.detail))
+          var filterSrc = []
+          for (var key in tempSrc) {
+            filterSrc.push(tempSrc[key])
+          }
+          _this.detail.imageSrc = filterSrc.filter((item) => {
+            // 过滤video
+            return !item.video
+          })
+          _this.videoSrc = filterSrc.filter((item) => {
+            // 提取video
+            return item.video
+          })
+          if (_this.videoSrc.length > 0) {
+            _this.swiperOpt.indicatorDots = true
+            _this.hasVideo = true
+          } else {
+            _this.swiperOpt.indicatorDots = false
+            _this.hasVideo = false
+          }
+          _this.getMarkUser(data.sourceId, data.sourceType)
+          if (data.collectionId) {
+            _this.collect = true
+            _this.collectTxt = '已收藏'
+          } else {
+            _this.collect = false
+            _this.collectTxt = '未收藏'
+          }
+          if (data.skus.length > 3) {
+            this.skuHeight = 300
+          }
+          data.skus.forEach((item) => {
+            var good = {}
+            good.name = item.productName + item.title
+            if (_this.userLevel === 0) {
+              good.price = item.price
+            } else if (_this.userLevel === 1) {
+              good.price = item.memberPrice
+            }
+            good.num = item.keepCout
+            if (item.keepCout > 0) {
+              good.checked = true
+            } else {
+              good.checked = false
+            }
+            good.cartCount = item.shoppingCartCount
+            good.type = item.sourceType
+            good.id = item.sourceId
+            good.isAllowSale = item.isAllowSale
+            _this.detail.goodList.push(good)
+            _this.$apply()
+          })
+          // 过滤下架或库存不足的SKU
+          var disableList = _this.detail.goodList.filter((item) => {
+            return !item.isAllowSale || item.num <= 0
+          })
+          // 判断是否所有SKU都下架
+          if (disableList.length === data.skus.length) {
+            _this.buttonDisable = false
+          }
+          // SKU按价钱排序
+          _this.detail.goodList.sort((good1, good2) => {
+            return parseInt(good1.price.replace(/,/g, '')) - parseInt(good2.price.replace(/,/g, ''))
+          })
+          cb && cb()
+        } else if (res.data.error === -1 && res.data.msg === 'miss spu') {
+          wepy.showModal({
+            title: '提示',
+            content: '该商品已下架',
+            showCancel: false,
+            success: (res) => {
+              if (res.confirm) {
+                wepy.navigateBack()
+              }
+            }
+          })
+        } else {
+          if (_this.$parent.missToken) {
+            _this.initData(() => {
+              _this.userLevel = _this.$parent.globalData.userLevel
+            })
+          }
+        }
+        _this.$apply()
+      }).catch((error) => {
+        console.log('error:' + error)
+        _this.$parent.hideLoading()
+      })
+    }
+    getRecommend () {
+      this.token = this.$parent.getToken()
+      this.recgoodList = []
+      var data = {
+        token: this.token,
+        spuId: this.pageId
+      }
+      this.$parent.HttpRequest.GetRecommend(data).then((res) => {
+        if (res.data.error === 0) {
+          var data = res.data.data
+          data.forEach((item) => {
+            var obj = {}
+            obj.cover = item.cover
+            obj.title = item.title
+            obj.price = item.memberPrice
+            obj.oldprice = item.price
+            obj.id = item.sourceId
+            this.recgoodList.push(obj)
+          })
+        } else {
+          if (this.$parent.missToken) {
+            this.getRecommend()
+          }
+        }
+        this.$apply()
+      }).catch(() => {
+      })
+    }
+    addCartData (cb) {
+      this.token = this.$parent.getToken()
+      var _this = this
+      var data = {
+        token: this.token,
+        sourceType: this.cartResult.type,
+        sourceId: this.cartResult.id,
+        count: this.cartNum
+      }
+      this.$parent.HttpRequest.AddCartHttp(data).then((res) => {
+        if (res.data.error === 0) {
+          cb && cb()
+          // _this.initData(_this.initCartResult())
+        } else {
+          if (_this.$parent.missToken) {
+            // _this.token = this.$parent.getToken(res.data.error)
+          }
+        }
+      })
+    }
+    getMarkUser (id, type) {
+      this.collectednum = ' '
+      this.token = this.$parent.getToken()
+      var _this = this
+      var data = {
+        token: this.token,
+        markType: 1,
+        sourceType: type,
+        sourceId: id
+      }
+      this.$parent.HttpRequest.GetMarkUser(data).then((res) => {
+        if (res.data.error === 0) {
+          var data = res.data.data
+          _this.collectednum = data.length
+        } else {
+          if (_this.$parent.missToken) {
+            // _this.token = this.$parent.getToken(res.data.error)
+          }
+        }
+        _this.$apply()
+      })
+    }
+    setMark (cb) {
+      var _this = this
+      this.token = this.$parent.getToken()
+      this.$parent.showLoading()
+      var data = {
+        token: this.token,
+        markType: 1,
+        sourceType: this.detail.type,
+        sourceId: this.detail.id
+      }
+      this.$parent.HttpRequest.SetMarkHttp(data).then((res) => {
+        console.log(res)
+        this.$parent.hideLoading()
+        if (res.data.error === 0) {
+          _this.markId = res.data.data
+          _this.getMarkUser(_this.detail.id, this.detail.type)
+          cb && cb()
+        } else {
+          if (_this.$parent.missToken) {
+            // _this.token = this.$parent.getToken(res.data.error)
+          }
+        }
+        _this.$apply()
+      })
+    }
+    CancelMark (cb) {
+      this.token = this.$parent.getToken()
+      this.$parent.showLoading()
+      var _this = this
+      var data = {
+        markId: this.markId || this.detail.collectId,
+        token: this.token
+      }
+      this.$parent.HttpRequest.CancelMarkHttp(data).then((res) => {
+        this.$parent.hideLoading()
+        if (res.data.error === 0) {
+          _this.getMarkUser(_this.detail.id, this.detail.type)
+          cb && cb()
+        } else {
+          if (_this.$parent.missToken) {
+            // _this.token = this.$parent.getToken(res.data.error)
+          }
+        }
+        _this.$apply()
+      })
+    }
+    // 转发
+    onShareAppMessage (res) {
+      return {
+        title: this.detail.title,
+        path: '/pages/detail?id=' + this.pageId + '&refrenceCode=' + this.memberId
+      }
+    }
+    onLoad (id) {
+      if (id.scene) {
+        this.pageId = decodeURIComponent(id.scene)
+      } else {
+        this.pageId = id.id
+      }
+      if (id.refrenceCode) {
+        this.refrenceCode = id.refrenceCode
+      }
+      this.$parent.pageRoot = true
+      var _this = this
+      wepy.getSystemInfo({
+        success: function (res) {
+          _this.winHeight = res.windowHeight + 'px'
+        }
+      })
+      this.getRecommend()
+      this.$apply()
+    }
+    onReady () {
+      this.videoContext = wepy.createVideoContext('video')
+    }
+    onShow () {
+      this.token = this.$parent.getToken()
+      this.methods.closeCart.apply(this)
+      this.userLevel = this.$parent.globalData.userLevel
+      this.initData(() => {
+        this.userName = this.$parent.getUserName()
+        this.userAvatar = this.$parent.getUserAvatar()
+        this.customer_info = this.$parent.getMessage()
+        this.bussiness_info = this.$parent.getBusiness('商品详情页', this.currentPath, null)
+        this.initCartResult()
+        this.addCartCount = this.cartResult.cartCount
+      })
+      this.$apply()
+    }
+    onUnload () {
+      var pages = this.getCurrentPages()
+      if (pages[pages.length - 2] && pages[pages.length - 2].data.pageId) {
+        this.pageId = pages[pages.length - 2].data.pageId
+      }
+    }
+  }
+</script>

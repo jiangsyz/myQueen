@@ -1,0 +1,295 @@
+<style lang="less" src="../less/paybuy.less"></style>
+
+<template>
+  <view class="container" wx:if="{{!isNull}}">
+    <view class="address" @tap="goAddress">
+      <text class="address-title">订单配送至</text>
+      <scroll-view scroll-x>{{user.add}}</scroll-view>
+      <text class="iconfont icon-rightsj"></text>
+      <text class="user">{{user.name}} {{user.phone}}</text>
+    </view>
+    <view class="cart-status" wx:if="{{userLevel === 1}}">
+      <text class="font-normal">尊敬的<text class="link">超级会员</text>，本单已为您节省 <text class="font-normal link font-bold">￥{{reduction}}</text></text>
+    </view>
+    <view class="cart-status" wx:elif="{{userLevel === 0}}">
+      <text class="font-normal">成为超级会员，本单仅需 <text class="font-normal link font-bold">￥{{memberPrice}}</text></text>
+      <view class="default-button" @tap="goApplyVip">加入会员</view>
+    </view>
+    <repeat for="{{order}}" item="item" index="index">
+      <view class="cart-list" wx:if="{{!item.isNull}}">
+        <view class="content">
+          <text class="title"><text class="iconfont {{item.iconClass}}"></text>{{item.title}}</text>
+        </view>
+        <view class="item-box">
+          <view class="items">
+            <orderList :orderList.sync="item.coldlist" :userLevel.sync="userLevel"></orderList>
+          </view>
+        </view>
+      </view>
+    </repeat>
+    <view class="memo">
+      <view class="memo-left">
+        <text class="title">订单备注:</text>
+        <text class="tips">{{txtLength}}/100</text>
+      </view>
+      <view class="memo-right">
+        <textarea placeholder="请输入备注" placeholder-class="placeholder" maxlength="100" @input="inputTap" value="{{memo}}"/>
+      </view>
+    </view>
+    <view class="vip-tip" wx:if="{{userLevel === 1}}">
+      <image src="../image/dril_golden2.png"></image>
+      <text class="title">尊敬的<text class="link">超级会员</text>，您目前享有包邮特权</text>
+    </view>
+    <view class="vip-tip no-active" wx:elif="{{userLevel === 0}}">
+      <image src="../image/dril_gray2.png"></image>
+      <text class="title">成为会员，可享全场包邮</text>
+    </view>
+    <view class="order-list">
+      <text class="title">运费：</text>
+      <text class="title order-list-right">￥{{freight}}</text>
+    </view>
+    <view class="order-list">
+      <text class="title">订单总额：</text>
+      <text class="title order-list-right link">￥{{finalprice}}</text>
+    </view>
+    <view class="order-bottom">
+      <image src="../image/dz_bgbl.png"></image>
+      <text class="title">合计:￥<text class="link">{{pay}}</text><text class="tips">（含运费 ￥{{freight}}）</text></text>
+      <text class="go-pay" @tap="goPay">去付款</text>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import OrderList from '../components/orderlist'
+
+  export default class PayBuy extends wepy.page {
+    config = {
+      navigationBarTitleText: '确认订单'
+    }
+    components = {
+      orderList: OrderList
+    }
+    computed = {
+      // userLevel () {
+      //   if (this.$parent.globalData.userLevel === 0) {
+      //     return false
+      //   } else if (this.$parent.globalData.userLevel === 1) {
+      //     return true
+      //   }
+      // },
+      isNull () {
+        if (this.order.length === 0) {
+          return true
+        } else {
+          return false
+        }
+      }
+    }
+    data = {
+      token: '',
+      sourceId: '',
+      sourceType: '',
+      count: '',
+      user: {
+        add: '请选择收货地址'
+      },
+      addressMain: '',
+      appType: 'web',
+      order: [],
+      reduction: '',
+      freight: '',
+      pay: '',
+      memberPrice: '',
+      finalprice: '',
+      txtLength: 0,
+      memo: '',
+      payment: true,
+      paramMemo: '',
+      userLevel: 0
+    }
+    methods = {
+      goAddress () {
+        wepy.redirectTo({
+          url: './address?page=paybuy' + '&sourceType=' + this.sourceType + '&sourceId=' + this.sourceId + '&count=' + this.count + '&memo=' + this.memo
+        })
+      },
+      goApplyVip () {
+        wepy.navigateTo({
+          url: './applyVip'
+        })
+      },
+      goPay () {
+        this.token = this.$parent.getToken()
+        if (!this.user.areaId) {
+          wepy.showToast({
+            title: '请选择收货地址',
+            icon: 'none',
+            image: '../image/cancel.png'
+          })
+        } else {
+          if (this.payment) {
+            var data = {
+              token: this.token,
+              appType: 'miniApp',
+              sourceType: this.sourceType,
+              sourceId: this.sourceId,
+              buyCount: this.count,
+              address_main: this.user.id,
+              memo_main: encodeURI(this.memo),
+              date_main: 4
+            }
+            this.$parent.HttpRequest.CreateOrderBuy(data).then((res) => {
+              if (res.data.error === 0) {
+                var data = res.data.data
+                var timeStamp = data.timestamp.toString()
+                var nonceStr = data.noncestr
+                var prepayid = 'prepay_id=' + data.prepayid
+                var signData = {
+                  'appId': 'wx4fadd384b39658cd',
+                  'timeStamp': timeStamp,
+                  'nonceStr': nonceStr,
+                  'package': prepayid,
+                  'signType': 'MD5'
+                }
+                var sign = this.$parent.HttpRequest.getPaySign(signData)
+                wepy.requestPayment({
+                  'timeStamp': timeStamp,
+                  'nonceStr': nonceStr,
+                  'package': prepayid,
+                  'signType': 'MD5',
+                  'paySign': sign,
+                  'success': (res) => {
+                    if (res.errMsg === 'requestPayment:ok') {
+                      // 用户支付成功跳转首页
+                      // wepy.switchTab({
+                      //   url: './index'
+                      // })
+                      wepy.redirectTo({
+                        url: './order?orderType=undelivered'
+                      })
+                    } else if (res.errMsg === 'requestPayment:cancel') {
+                      // 用户取消支付跳转订单列表
+                      this.$parent.payFail()
+                    }
+                  },
+                  'fail': (res) => {
+                    this.$parent.payFail()
+                  },
+                  'complete': (res) => {
+                    this.payment = true
+                  }
+                })
+              } else {
+                this.$parent.payFail()
+              }
+            }).catch(() => {
+              this.$parent.payFail()
+            })
+          }
+          this.payment = false
+        }
+      },
+      inputTap (e) {
+        this.txtLength = e.detail.value.length
+        this.memo = e.detail.value
+      }
+    }
+    applyOrder () {
+      this.token = this.$parent.getToken()
+      this.$parent.showLoading()
+      this.order = []
+      var _this = this
+      var data = {
+        token: this.token,
+        sourceType: this.sourceType,
+        sourceId: this.sourceId,
+        buyCount: this.count
+      }
+      this.$parent.HttpRequest.ApplyOrderBuy(data).then((res) => {
+        _this.$parent.hideLoading()
+        if (res.data.error === 0) {
+          var data = res.data.data
+          _this.reduction = data.reduction
+          _this.freight = data.freight
+          _this.pay = data.pay
+          _this.memberPrice = data.memberPrice
+          _this.finalprice = data.finalPrice
+          // 测试用户身份变化
+          _this.$parent.resetUserLevel(data.memberHash, this.token, () => {
+            _this.userLevel = _this.$parent.globalData.userLevel
+          })
+          data.childOrders.forEach((item) => {
+            var obj = {}
+            obj.title = item.title
+            if (item.title === '冷链配送') {
+              obj.iconClass = 'icon-new_llps'
+            } else if (item.title === '常规配送') {
+              obj.iconClass = 'icon-new_cgps'
+            }
+            obj.freight = item.freight
+            obj.tempCold = []
+            obj.coldlist = this.initChild(item.salesUnits)
+            _this.order.push(obj)
+            _this.$apply()
+          })
+        } else {
+          wepy.showModal({
+            title: '创建订单失败',
+            content: '请点击确认返回购物车',
+            showCancel: false,
+            success: (res) => {
+              if (res.confirm) {
+                wepy.switchTab({
+                  url: './cart'
+                })
+              }
+            }
+          })
+        }
+      }).catch(() => {
+        _this.$parent.hideLoading()
+        // _this.$parent.showFail()
+      })
+    }
+    initChild (parent) {
+      var child = []
+      parent.forEach((item) => {
+        var obj = {}
+        obj.path = item.cover
+        obj.title = item.title
+        obj.price = item.memberPrice
+        obj.oldprice = item.price
+        obj.id = item.productId
+        obj.sourceType = item.salesUnitType
+        obj.sourceId = item.salesUnitId
+        obj.detail = item.viceTitle + '×' + item.buyCount
+        obj.checked = false
+        obj.totalCount = item.keepCount
+        child.push(obj)
+      })
+      return child
+    }
+    onLoad (param) {
+      if (param.user) {
+        this.user = JSON.parse(param.user)
+        this.paramMemo = param.memo
+      }
+      this.sourceId = param.id
+      this.sourceType = param.type
+      this.count = param.count
+      this.applyOrder()
+      this.$apply()
+    }
+    onShow () {
+      this.userLevel = this.$parent.globalData.userLevel
+      console.log(this.userLevel)
+      this.$apply()
+    }
+    onReady () {
+      this.memo = this.paramMemo
+      this.txtLength = this.paramMemo.length
+    }
+  }
+</script>

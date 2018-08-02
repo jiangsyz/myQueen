@@ -1,0 +1,266 @@
+<style lang="less" src="../less/category.less"></style>
+<template>
+  <view class="container">
+    <view wx:if="{{isLoading}}">
+      <searchbar :pagefrom.sync="pageTile"></searchbar>
+      <view class="category-bg">
+        <repeat for="{{categoryImg}}" item="item" index="index" key="index">
+          <image src="{{item}}" class="{{index === currentTab ? 'active' : ''}}" style="z-index:{{index === currentTab ? '999' : index}}"></image>
+        </repeat>
+      </view>
+      <scroll-view class="category-tab" scroll-x>
+        <repeat for="{{categoryTab}}" item="item" index="index" key="index">
+          <view class="category-tab-list {{currentTab === index ? 'active' : ''}}" @tap="changeTab({{index}}, {{item.id}})">
+            <view class="category-tab-title">{{item.title}}</view>
+          </view>
+        </repeat>
+      </scroll-view>
+      <view class="category-tab-item">
+        <repeat for="{{categoryTab}}" item="item" index="index" key="index">
+          <scroll-view class="category-tab-page {{showMore === index ? 'more' : ''}}" wx:if="{{currentTab === index}}" scroll-x>
+            <repeat for="{{item.child}}" item="item" index="index" key="index">
+              <view class="catrgory-tab-link {{currentItem === index ? 'current' : ''}}" id="{{item.id}}" @tap="reqCategory({{index}}, {{item.id}})"><text>{{item.name}}</text></view>
+            </repeat>
+          </scroll-view>
+        </repeat>
+      </view>
+      <view class="content" wx:if="{{!isNull}}">
+        <Categoods :goodsItem.sync="goods" @goodsTap.user="goDetail"></Categoods>
+      </view>
+      <view class="defect" wx:else>
+        <defectImage type="1"></defectImage>
+      </view>
+      <isDown wx:if="{{isDown}}"></isDown>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import Goods from '../components/goods'
+  import Search from '../components/searchbar'
+  import Defect from '../components/defect'
+  import Reachdown from '../components/reachdown'
+
+  export default class Category extends wepy.page {
+    config = {
+      navigationBarTitleText: '商品分类',
+      enablePullDownRefresh: true
+    }
+    components = {
+      Categoods: Goods,
+      defectImage: Defect,
+      searchbar: Search,
+      isDown: Reachdown
+    }
+    data = {
+      token: '',
+      categoryImg: ['http://p33mnuvro.bkt.clouddn.com/flimg_niupai.png', 'http://p33mnuvro.bkt.clouddn.com/flimg_niurou.png', 'http://p33mnuvro.bkt.clouddn.com/flimg_haixian.png', 'http://p33mnuvro.bkt.clouddn.com/flimg_jiulei.png', 'http://p33mnuvro.bkt.clouddn.com/flimg_qita.png'],
+      categoryTab: [],
+      childCategory: [{
+        name: '',
+        id: ''
+      }],
+      goods: [],
+      pageTile: 'category',
+      currentTab: 0,
+      currentItem: 0,
+      isNull: false,
+      showMore: '',
+      pageSize: 5,
+      pageNum: 1,
+      sourceId: '',
+      totalPageNum: '',
+      isDown: false,
+      isLoading: false
+    }
+    getShowMore () {
+      this.categoryTab.forEach((item, index) => {
+        if (item.category.length > 5) {
+          this.showMore = index
+        }
+      })
+    }
+    methods = {
+      changeTab (index, id) {
+        this.currentTab = index
+        this.currentItem = 0
+        this.sourceId = id
+        this.isNull = false
+        this.pageNum = 1
+        this.getSpu(this.sourceId)
+      },
+      reqCategory (index, id) {
+        this.currentItem = index
+        this.sourceId = id
+        this.isNull = false
+        this.pageNum = 1
+        this.getSpu(this.sourceId)
+      },
+      goDetail (id) {
+        wepy.navigateTo({
+          url: './detail?id=' + id
+        })
+      }
+    }
+    onReachBottom () {
+      if (this.pageNum < this.totalPageNum) {
+        // 显示下一页数据
+        this.pageNum ++
+        this.getSpu(this.sourceId)
+      } else {
+        if (this.goods.length !== 0) {
+          this.isDown = true
+        }
+      }
+    }
+    getTopCate () {
+      this.$parent.showLoading()
+      this.token = this.$parent.getToken()
+      var _this = this
+      var data = {
+        token: this.token
+      }
+      this.$parent.HttpRequest.GetTopCategory(data).then((res) => {
+        console.log(res)
+        _this.$parent.hideLoading()
+        if (res.data.error === 0) {
+          _this.isLoading = true
+          var data = res.data.data
+          data.forEach((item) => {
+            var obj = {}
+            obj.title = item.name
+            obj.id = item.id
+            obj.child = _this.getChildCate(item.id)
+            _this.categoryTab.push(obj)
+          })
+          _this.sourceId = _this.categoryTab[0].id
+          _this.getSpu(_this.sourceId)
+        } else {
+          _this.isNull = true
+          if (_this.$parent.missToken) {
+            _this.getTopCate()
+          }
+        }
+        _this.$apply()
+      }).catch(() => {
+        _this.$parent.hideLoading()
+        _this.isNull = true
+        // _this.$parent.showFail()
+      })
+    }
+    getChildCate (sourceId) {
+      this.token = this.$parent.getToken()
+      var _this = this
+      var data = {
+        token: this.token,
+        categoryId: sourceId,
+        includSelf: 1
+      }
+      var child = [{
+        name: '全部',
+        id: sourceId
+      }]
+      this.$parent.HttpRequest.GetChildCategory(data).then((res) => {
+        if (res.data.error === 0) {
+          var data = res.data.data
+          data.forEach((item) => {
+            var obj = {}
+            obj.name = item.name
+            obj.id = item.id
+            child.push(obj)
+          })
+        } else {
+          _this.isNull = true
+          if (_this.$parent.missToken) {
+            // _this.token = this.$parent.getToken(res.data.error)
+          }
+        }
+        _this.$apply()
+      }).catch(() => {
+        _this.isNull = true
+      })
+      return child
+    }
+    getSpu (sourceId, cb) {
+      this.token = this.$parent.getToken()
+      this.$parent.showLoading()
+      this.isDown = false
+      var _this = this
+      var data = {
+        categoryId: sourceId,
+        token: this.token,
+        pageSize: this.pageSize,
+        pageNum: this.pageNum
+      }
+      this.$parent.HttpRequest.GetSpuHttp(data).then((res) => {
+        console.log(res)
+        if (_this.pageNum === 1) {
+          _this.goods = []
+        }
+        if (res.data.error === 0) {
+          _this.$parent.hideLoading()
+          _this.totalPageNum = res.data.data.totalPageNum
+          var data = res.data.data.spus
+          if (data.length === 0) {
+            _this.isNull = true
+          } else {
+            _this.isNull = false
+            if (res.data.data.totalCount <= this.pageSize) {
+              _this.isDown = true
+            } else {
+              _this.isDown = false
+            }
+          }
+          data.forEach((item) => {
+            var good = {}
+            good.path = item.cover
+            good.title = item.title
+            good.price = item.memberPrice
+            good.oldprice = item.price
+            good.detail = item.viceTitle
+            good.reduction = item.reduction
+            good.id = item.sourceId
+            good.descript = item.desc
+            _this.goods.push(good)
+          })
+          cb && cb()
+        } else {
+          _this.isNull = true
+          if (_this.$parent.missToken) {
+            _this.getSpu(sourceId, cb)
+          }
+        }
+        _this.$apply()
+      }).catch(() => {
+        _this.isNull = true
+        _this.$parent.showFail()
+      })
+    }
+    onLoad () {
+      this.getTopCate()
+      this.getShowMore()
+      this.$apply()
+    }
+    onShow () {
+      if (this.$parent.pageRoot) {
+        this.$parent.pageRoot = false
+      } else {
+        // this.currentTab = 0
+        // this.currentItem = 0
+        // if (this.categoryTab.length !== 0) {
+        //   this.getSpu(this.categoryTab[0].id)
+        // }
+      }
+    }
+    onPullDownRefresh () {
+      this.currentTab = 0
+      this.currentItem = 0
+      if (this.categoryTab.length > 0) {
+        this.getSpu(this.categoryTab[0].id, () => {
+          wepy.stopPullDownRefresh()
+        })
+      }
+    }
+  }
+</script>

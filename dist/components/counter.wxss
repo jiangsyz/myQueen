@@ -1,0 +1,54 @@
+/* -- base color -- */
+/* -- base fontSize -- */
+/* -- base lineHeight -- */
+/* -- Mixin -- */
+.counter {
+  display: flex;
+  position: relative;
+  flex-direction: row-reverse;
+}
+.counter .counter-btn {
+  border: 1px #eeeeee solid;
+  width: 70rpx;
+  height: 70rpx;
+  font-size: 36rpx;
+  display: inline-block;
+  line-height: 70rpx;
+  text-align: center;
+  background: #ffffff;
+  float: left;
+}
+.counter .temp-input {
+  color: #ec3d3a;
+  position: absolute;
+  left: 98rpx;
+  top: 2rpx;
+  border-left: 0;
+  border-right: 0;
+  z-index: 99;
+  background: #ffffff;
+  border: none;
+  width: 20rpx;
+}
+.counter .number {
+  color: #ec3d3a;
+  width: 67rpx;
+  height: 70rpx;
+  vertical-align: middle;
+}
+.counter .number.disabled {
+  background: #f8f8f8;
+  color: #999999;
+}
+.counter .minusBtn {
+  background: #f8f8f8;
+  color: #999999;
+}
+.counter .minusBtn.able {
+  background: #ffffff;
+  color: #333333;
+}
+.counter .disable {
+  background: #f8f8f8;
+  color: #999999;
+}
