@@ -8,13 +8,13 @@
           <image src="{{item}}" class="{{index === currentTab ? 'active' : ''}}" style="z-index:{{index === currentTab ? '999' : index}}"></image>
         </repeat>
       </view>
-      <scroll-view class="category-tab" scroll-x>
+      <view class="category-tab">
         <repeat for="{{categoryTab}}" item="item" index="index" key="index">
           <view class="category-tab-list {{currentTab === index ? 'active' : ''}}" @tap="changeTab({{index}}, {{item.id}})">
             <view class="category-tab-title">{{item.title}}</view>
           </view>
         </repeat>
-      </scroll-view>
+      </view>
       <view class="category-tab-item">
         <repeat for="{{categoryTab}}" item="item" index="index" key="index">
           <scroll-view class="category-tab-page {{showMore === index ? 'more' : ''}}" wx:if="{{currentTab === index}}" scroll-x>
@@ -114,7 +114,9 @@
         }
       }
     }
-    getTopCate () {
+    getTopCate (cb) {
+      this.categoryTab = []
+      this.goods = []
       this.$parent.showLoading()
       this.token = this.$parent.getToken()
       var _this = this
@@ -122,7 +124,6 @@
         token: this.token
       }
       this.$parent.HttpRequest.GetTopCategory(data).then((res) => {
-        console.log(res)
         _this.$parent.hideLoading()
         if (res.data.error === 0) {
           _this.isLoading = true
@@ -135,7 +136,9 @@
             _this.categoryTab.push(obj)
           })
           _this.sourceId = _this.categoryTab[0].id
-          _this.getSpu(_this.sourceId)
+          _this.getSpu(_this.sourceId, () => {
+            cb && cb()
+          })
         } else {
           _this.isNull = true
           if (_this.$parent.missToken) {
@@ -254,13 +257,27 @@
       }
     }
     onPullDownRefresh () {
+      this.pageNum = 1
+      this.isLoading = false
       this.currentTab = 0
       this.currentItem = 0
-      if (this.categoryTab.length > 0) {
-        this.getSpu(this.categoryTab[0].id, () => {
-          wepy.stopPullDownRefresh()
-        })
-      }
+      this.childCategory = [{
+        name: '',
+        id: ''
+      }]
+      this.sourceId = ''
+      this.totalPageNum = ''
+      this.$apply()
+      // this.goods = []
+      // if (this.categoryTab.length > 0) {
+      //   this.getSpu(this.categoryTab[0].id, () => {
+      //     wepy.stopPullDownRefresh()
+      //   })
+      // }
+      this.getTopCate(() => {
+        wepy.stopPullDownRefresh()
+      })
+      this.getShowMore()
     }
   }
 </script>

@@ -14,13 +14,13 @@
           <image src="{{item}}" class="{{index === currentTab ? 'active' : ''}}" style="z-index:{{index === currentTab ? '999' : index}}"/>
         </block>
       </view>
-      <scroll-view class="category-tab" scroll-x>
+      <view class="category-tab">
         <block wx:for="{{categoryTab}}" wx:for-index="index" wx:for-item="item" wx:key="index">
           <view class="category-tab-list {{currentTab === index ? 'active' : ''}}" bindtap="changeTab" data-wpychangetab-a="{{index}}" data-wpychangetab-b="{{item.id}}">
             <view class="category-tab-title">{{item.title}}</view>
           </view>
         </block>
-      </scroll-view>
+      </view>
       <view class="category-tab-item">
         <block wx:for="{{categoryTab}}" wx:for-index="index" wx:for-item="item" wx:key="index">
           <scroll-view class="category-tab-page {{showMore === index ? 'more' : ''}}" wx:if="{{currentTab === index}}" scroll-x>

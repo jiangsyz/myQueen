@@ -74,22 +74,24 @@
     }
     methods = {
       login (e) {
-        if (e.detail.encryptedData) {
-          this.$parent.getUserInfo(e, this.jscode, this.refrenceCode, () => {
-            // wepy.navigateTo({
-            //   url: './getUserInfo'
-            // })
-            this.hasPhone = true
-            this.$apply()
-          }, () => {
-            this.showError()
-            this.$apply()
-          })
-        } else {
-          wepy.showModal({
-            title: '提示',
-            content: '拒绝授权将无法正常使用小程序全部功能，请重新开启授权'
-          })
+        if (!this.hasPhone) {
+          if (e.detail.encryptedData) {
+            this.$parent.getUserInfo(e, this.jscode, this.refrenceCode, () => {
+              // wepy.navigateTo({
+              //   url: './getUserInfo'
+              // })
+              this.hasPhone = true
+              this.$apply()
+            }, () => {
+              this.showError()
+              this.$apply()
+            })
+          } else {
+            wepy.showModal({
+              title: '提示',
+              content: '拒绝授权将无法正常使用小程序全部功能，请重新开启授权'
+            })
+          }
         }
       },
       loginAgain () {

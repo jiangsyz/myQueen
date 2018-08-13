@@ -108,7 +108,7 @@
         return this.userName
       },
       phoneTap (e) {
-        this.userPhone = e.detail.value
+        this.userPhone = e.detail.value.replace(/\s+/g, '')
         return this.userPhone
       },
       postTap (e) {

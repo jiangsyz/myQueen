@@ -21,10 +21,9 @@
 }
 .package view {
   width: 190rpx;
-  margin: 0 30rpx;
   box-sizing: border-box;
   text-align: center;
-  float: left;
+  display: inline-block;
 }
 .package view.active {
   border-bottom: 2px #ec3d3a solid;
